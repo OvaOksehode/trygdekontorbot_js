@@ -185,7 +185,8 @@ def main():
 
     if con:
         #print_all_entries(con, "C_Transaction")
-        create_transaction(con, sender_owner_id=1, receiver_owner_id=2, amount=100.0)
+        # create_transaction(con, sender_owner_id=1, receiver_owner_id=2, amount=100.0)
+        print(get_all_users(con))
         con.close()
 
 if __name__ == "__main__":
