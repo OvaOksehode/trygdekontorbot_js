@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const axios = require('axios');
+const apiUrl = process.env.FLASK_API_URL;
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -42,7 +43,7 @@ module.exports = {
             }
 
             // Send en POST-forespørsel til Flask-API-et for å utføre transaksjonen
-            const response = await axios.post('http://127.0.0.1:5000/create_transaction', data);
+            const response = await axios.post('${apiUrl}/create_transaction', data);
 
             // Hvis det er suksess, svar med en suksessmelding til Discord
             if (response.data.success) {

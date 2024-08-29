@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const axios = require('axios');
+const apiUrl = process.env.FLASK_API_URL;
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -39,7 +40,7 @@ module.exports = {
                 // Brukeren bekreftet slettingen
                 try {
                     // Send DELETE-forespørsel til Flask API for å slette selskapet
-                    await axios.delete(`http://127.0.0.1:5000/deletecompany/${ownerId}`);
+                    await axios.delete(`${apiUrl}/deletecompany/${ownerId}`);
 
                     await i.update({ content: 'Selskapet ditt ble slettet.', components: [] });
                 } catch (error) {

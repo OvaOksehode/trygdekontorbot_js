@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const axios = require('axios');
+const apiUrl = process.env.FLASK_API_URL;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -19,7 +20,7 @@ module.exports = {
 
 		try {
 			// Send en POST-forespørsel til Flask-API-et
-			const response = await axios.post(`http://127.0.0.1:5000/createcompany/${ownerId}`, null, {
+			const response = await axios.post(`${apiUrl}/createcompany/${ownerId}`, null, {
 				params: {
 					name: name,
 					balance: balance

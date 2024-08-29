@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const axios = require('axios');
+const apiUrl = process.env.FLASK_API_URL;
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -16,7 +17,7 @@ module.exports = {
 
         try {
             // Send en POST-forespørsel til Flask-API-et for å endre navnet på selskapet
-            const response = await axios.post('http://127.0.0.1:5000/rename_company', {
+            const response = await axios.post('${apiUrl}/rename_company', {
                 company_id: companyId,
                 new_name: newName
             });

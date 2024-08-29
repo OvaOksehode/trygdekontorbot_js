@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const axios = require('axios');
+const apiUrl = process.env.FLASK_API_URL;
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -11,7 +12,7 @@ module.exports = {
         
         try {
             // Send en GET-forespørsel til Flask-API-et
-            const response = await axios.get(`http://127.0.0.1:5000/get_balance/${ownerId}`);
+            const response = await axios.get(`${apiUrl}/get_balance/${ownerId}`);
             
             // Send svar tilbake til Discord med saldoen
             const balance = response.data.balance;
