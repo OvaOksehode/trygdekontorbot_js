@@ -54,3 +54,6 @@ steps:
   - 'CLIENT_TOKEN=${_CLIENT_TOKEN},CLIENT_ID=${_CLIENT_ID},GUILD_ID=${_GUILD_ID},FLASK_API_URL=${_FLASK_API_URL}'
 
 timeout: '1200s'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
