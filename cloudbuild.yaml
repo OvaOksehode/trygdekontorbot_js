@@ -1,0 +1,27 @@
+steps:
+# Bygg Docker-imaget for Discord-botten
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - 'build'
+  - '-t'
+  - 'europe-north1-docker.pkg.dev/trygdekontorbot/discord-bot-repo/discord-bot:${COMMIT_SHA}'
+  - '-f'
+  - 'bot/Dockerfile'
+  - 'bot'
+
+# Bygg Docker-imaget for Flask-API
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - 'build'
+  - '-t'
+  - 'europe-north1-docker.pkg.dev/trygdekontorbot/discord-bot-repo/flask-api:${COMMIT_SHA}'
+  - '-f'
+  - 'api/Dockerfile'
+  - 'api'
+
+images:
+- 'europe-north1-docker.pkg.dev/trygdekontorbot/discord-bot-repo/discord-bot:${COMMIT_SHA}'
+- 'europe-north1-docker.pkg.dev/trygdekontorbot/discord-bot-repo/flask-api:${COMMIT_SHA}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
