@@ -1,27 +1,56 @@
 steps:
-# Bygg Docker-imaget for Discord-botten
+# Build Flask app container
 - name: 'gcr.io/cloud-builders/docker'
-  args:
-  - 'build'
-  - '-t'
-  - 'europe-north1-docker.pkg.dev/trygdekontorbot/discord-bot-repo/discord-bot:${COMMIT_SHA}'
-  - '-f'
-  - 'bot/Dockerfile'
-  - 'bot'
-
-# Bygg Docker-imaget for Flask-API
+  args: ['build', '-t', 'gcr.io/trygdekontorbot/flask-app:${SHORT_SHA}', '-f', 'api/Dockerfile', 'api/']
 - name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/trygdekontorbot/flask-app:${SHORT_SHA}']
+
+# Deploy Flask app to Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   args:
-  - 'build'
-  - '-t'
-  - 'europe-north1-docker.pkg.dev/trygdekontorbot/discord-bot-repo/flask-api:${COMMIT_SHA}'
-  - '-f'
-  - 'api/Dockerfile'
-  - 'api'
+  - 'gcloud'
+  - 'run'
+  - 'deploy'
+  - 'flask-app'
+  - '--image'
+  - 'gcr.io/trygdekontorbot/flask-app:${SHORT_SHA}'
+  - '--platform'
+  - 'managed'
+  - '--region'
+  - 'europe-north1'
+  - '--allow-unauthenticated'
+  - '--memory'
+  - '512Mi'
+  - '--port'
+  - '5000'
+  - '--set-env-vars'
+  - 'FLASK_ENV=production'
 
-images:
-- 'europe-north1-docker.pkg.dev/trygdekontorbot/discord-bot-repo/discord-bot:${COMMIT_SHA}'
-- 'europe-north1-docker.pkg.dev/trygdekontorbot/discord-bot-repo/flask-api:${COMMIT_SHA}'
+# Build Discord bot container
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/trygdekontorbot/discord-bot:${SHORT_SHA}', '-f', 'bot/Dockerfile', 'bot/']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/trygdekontorbot/discord-bot:${SHORT_SHA}']
 
-options:
-  logging: CLOUD_LOGGING_ONLY
+# Deploy Discord bot to Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  args:
+  - 'gcloud'
+  - 'run'
+  - 'deploy'
+  - 'discord-bot'
+  - '--image'
+  - 'gcr.io/trygdekontorbot/discord-bot:${SHORT_SHA}'
+  - '--platform'
+  - 'managed'
+  - '--region'
+  - 'europe-north1'
+  - '--allow-unauthenticated'
+  - '--memory'
+  - '512Mi'
+  - '--port'
+  - '8080'
+  - '--set-env-vars'
+  - 'CLIENT_TOKEN=${_CLIENT_TOKEN},CLIENT_ID=${_CLIENT_ID},GUILD_ID=${_GUILD_ID},FLASK_API_URL=${_FLASK_API_URL}'
+
+timeout: '1200s'
