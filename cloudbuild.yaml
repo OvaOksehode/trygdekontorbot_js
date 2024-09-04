@@ -2,12 +2,12 @@ steps:
   # Trinn for å bygge Flask-appen
   - name: 'gcr.io/cloud-builders/docker'
     dir: 'api'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/flask-api:$COMMIT_SHA', './api']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/flask-api:$COMMIT_SHA', '.']
 
   # Trinn for å bygge Discord-botten
   - name: 'gcr.io/cloud-builders/docker'
     dir: 'bot'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/discord-bot:$COMMIT_SHA', './bot']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/discord-bot:$COMMIT_SHA', '.']
 
   # Trinn for å deploye Flask-appen til Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -16,8 +16,11 @@ steps:
       '--image', 'gcr.io/$PROJECT_ID/flask-api:$COMMIT_SHA',
       '--platform', 'managed',
       '--region', 'europe-north1',
-      '--allow-unauthenticated'
+      '--allow-unauthenticated',
+      '--update-env-vars', 'FLASK_API_URL=$(FLASK_API_URL)'
     ]
+    options:
+      logging: CLOUD_LOGGING_ONLY
 
   # Trinn for å deploye Discord-botten til Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -27,12 +30,11 @@ steps:
       '--platform', 'managed',
       '--region', 'europe-north1',
       '--allow-unauthenticated',
-      '--set-env-vars', 'CLIENT_TOKEN=$(YOUR_CLIENT_TOKEN),CLIENT_ID=$(YOUR_CLIENT_ID),GUILD_ID=$(YOUR_GUILD_ID)'
+      '--set-env-vars', 'CLIENT_TOKEN=$(CLIENT_TOKEN),CLIENT_ID=$(CLIENT_ID),GUILD_ID=$(GUILD_ID)'
     ]
+    options:
+      logging: CLOUD_LOGGING_ONLY
 
 images:
   - 'gcr.io/$PROJECT_ID/flask-api:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/discord-bot:$COMMIT_SHA'
-
-options:
-  logging: CLOUD_LOGGING_ONLY

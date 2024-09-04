@@ -1,20 +1,20 @@
-# Bruk en base image med Python
-FROM python:3.11-slim
+# Start med en Python-bilde
+FROM python:3.9-slim
 
-# Sett arbeidskatalogen i containeren
+# Sett arbeidskatalogen
 WORKDIR /app
 
-# Kopier requirements.txt inn i containeren
-COPY requirements.txt .
+# Kopier kravfilene
+COPY api/requirements.txt requirements.txt
 
-# Installer nødvendige Python-pakker
+# Installer kravene
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Kopier Flask API-koden inn i containeren
-COPY . .
+# Kopier resten av applikasjonen
+COPY api/ .
 
-# Eksponer port 5000 for Flask-appen
-EXPOSE 5000
+# Eksponer porten Flask vil lytte på
+ENV PORT=5000
 
-# Kommandoen for å kjøre Flask-appen
-CMD ["python", "app.py"]
+# Sett opp kommandoen for å kjøre Flask-appen
+CMD ["gunicorn", "-b", ":$PORT", "app:app"]

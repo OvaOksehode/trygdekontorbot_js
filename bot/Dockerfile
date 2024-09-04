@@ -5,16 +5,16 @@ FROM node:16-alpine
 WORKDIR /app
 
 # Kopier package.json og package-lock.json
-COPY package*.json ./
+COPY bot/package*.json ./
 
 # Installer avhengigheter
 RUN npm install --production
 
 # Kopier resten av applikasjonsfilene
-COPY . .
+COPY bot/ .
 
-# Miljøvariabler for å overstyre PORT
-ENV PORT 8080
+# Sett miljøvariabler for PORT
+ENV PORT=8080
 
 # Start botten
 CMD ["node", "index.js"]
