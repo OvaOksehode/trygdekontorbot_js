@@ -19,8 +19,6 @@ steps:
       '--allow-unauthenticated',
       '--update-env-vars', 'FLASK_API_URL=$(FLASK_API_URL)'
     ]
-    options:
-      logging: CLOUD_LOGGING_ONLY
 
   # Trinn for å deploye Discord-botten til Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -32,8 +30,10 @@ steps:
       '--allow-unauthenticated',
       '--set-env-vars', 'CLIENT_TOKEN=$(CLIENT_TOKEN),CLIENT_ID=$(CLIENT_ID),GUILD_ID=$(GUILD_ID)'
     ]
-    options:
-      logging: CLOUD_LOGGING_ONLY
+
+# Global opsjon for Cloud Logging
+options:
+  logging: CLOUD_LOGGING_ONLY
 
 images:
   - 'gcr.io/$PROJECT_ID/flask-api:$COMMIT_SHA'
