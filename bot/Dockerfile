@@ -1,17 +1,20 @@
-# Bruk en Node.js base image
-FROM node:20-alpine
+# Start med en Node.js-bilde
+FROM node:16-alpine
 
-# Sett arbeidskatalogen i containeren
-WORKDIR /bot
+# Sett arbeidskatalogen til /app
+WORKDIR /app
 
-# Kopier package.json og package-lock.json inn i containeren
+# Kopier package.json og package-lock.json
 COPY package*.json ./
 
-# Installer nødvendige npm-pakker
-RUN npm install
+# Installer avhengigheter
+RUN npm install --production
 
-# Kopier all bot-kode inn i containeren
+# Kopier resten av applikasjonsfilene
 COPY . .
 
-# Start Discord-boten
+# Miljøvariabler for å overstyre PORT
+ENV PORT 8080
+
+# Start botten
 CMD ["node", "index.js"]
