@@ -11,7 +11,7 @@ COPY bot/package*.json ./
 RUN npm install --production
 
 # Kopier resten av applikasjonsfilene
-COPY bot/ .
+COPY . .
 
 # Sett miljøvariabler for PORT
 ENV PORT=8080
