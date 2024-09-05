@@ -1,8 +1,16 @@
+const http = require('http');  // Legg til denne linjen for å importere http-modulen
 const fs = require('node:fs');
 const path = require('node:path');
 require('dotenv').config(); //initializes dotenv
 
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
+
+http.createServer((req, res) => {
+    res.writeHead(200, {'Content-Type': 'text/plain'});
+    res.end('Bot is running!\n');
+}).listen(8080, () => {
+    console.log('HTTP server running on port 8080');
+});
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
