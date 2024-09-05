@@ -2,7 +2,7 @@
 FROM node:16-alpine
 
 # Sett arbeidskatalogen til /app
-WORKDIR /app
+WORKDIR /bot
 
 # Kopier package.json og package-lock.json
 COPY bot/package*.json ./

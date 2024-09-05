@@ -140,4 +140,4 @@ def get_balance_route(owner_id):
         return jsonify({"error": "Ingen selskap funnet med gitt owner_id."}), 404
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
