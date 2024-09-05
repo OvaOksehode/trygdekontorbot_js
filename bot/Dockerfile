@@ -5,7 +5,7 @@ FROM node:16-alpine
 WORKDIR /bot
 
 # Kopier package.json og package-lock.json
-COPY bot/package*.json ./
+COPY package*.json ./
 
 # Installer avhengigheter
 RUN npm install --production
