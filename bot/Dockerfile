@@ -13,8 +13,7 @@ RUN npm install --production
 # Kopier resten av applikasjonsfilene
 COPY . .
 
-# Sett miljøvariabler for PORT
-ENV PORT=8080
+EXPOSE 8080
 
 # Start botten
 CMD ["node", "index.js"]
