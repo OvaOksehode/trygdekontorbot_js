@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import sqlite3
 from database_functions import get_all_users, delete_company_entry, create_company, create_transaction, get_company_balance, rename_company
 
@@ -11,7 +11,7 @@ def get_db_connection():
 
 @app.route("/")
 def home():
-    return "Trygdekontorbot API ver 0.0"
+    return render_template("index.html")
 
 @app.route("/getallusers")
 def get_users():
