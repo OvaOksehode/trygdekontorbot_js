@@ -1,11 +1,13 @@
 from flask import Flask, request, jsonify, render_template
 import sqlite3
+import os
 from database_functions import get_all_users, delete_company_entry, create_company, create_transaction, get_company_balance, rename_company
 
 app = Flask(__name__)
+db_path = os.path.join("data", "janovecoin.db")
 
 def get_db_connection():
-    con = sqlite3.connect("janovecoin.db")
+    con = sqlite3.connect(db_path)
     con.row_factory = sqlite3.Row  # Optional: Makes rows behave like dictionaries
     return con
 
