@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nados.no - Hjem</title>
+    <style>
+        /* Sikrer at body og html fyller hele skjermen */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        /* Container for bildet */
+        .image-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Gjør at bildet fyller hele skjermen */
+        img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="image-container">
+        <img src="{{ url_for('static', filename='nados.no_forside.png') }}" alt="bildet døde">
+    </div>
+
+</body>
+</html>
