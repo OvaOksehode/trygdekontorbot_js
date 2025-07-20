@@ -23,3 +23,10 @@ Thumbs.db
 .idea/
 
 bot/discloud.config
+api/instance/database.db
+.vs/slnx.sqlite
+.vs/trygdekontorbot/CopilotIndices/17.13.439.2385/CodeChunks.db
+.vs/trygdekontorbot/CopilotIndices/17.13.439.2385/SemanticSymbols.db
+.vs/trygdekontorbot/v17/.wsuo
+Keycloak/h2/keycloakdb.mv.db
+Keycloak/h2/keycloakdb.trace.db
