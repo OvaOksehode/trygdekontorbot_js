@@ -8,3 +8,6 @@ def create_company(company_data):
 
 def update_company(company_data_updated):
     CompanyRepository.update()
+
+def get_by_id(company_id):
+    return CompanyRepository.get_by_id(company_id)

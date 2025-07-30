@@ -20,6 +20,17 @@ api = Blueprint("api", __name__)
 # - Read transaction    [  ]
 # - [Admin] spawn money [  ]
 
+# GET localhost/api/login
+# ✅ Create company
+@api.route("/company", methods=["POST"])
+def request_create_company():
+    try:
+        data = CompanyDTO(**request.json).model_dump()
+        create_company(data)
+        return jsonify(data), 201
+    except ValidationError as error:
+        return jsonify(error.errors()), 400
+
 # POST localhost/api/company
 # ✅ Create company
 @api.route("/company", methods=["POST"])

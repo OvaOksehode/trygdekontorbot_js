@@ -1,6 +1,7 @@
 # app_factory/create_app.py
 
 from flask import Flask
+from infrastructure.db.seed_db import seed_db
 from config import Settings
 from infrastructure.db.db_context import db, init_app
 from infrastructure.db.init_db import init_db
@@ -15,6 +16,7 @@ def create_app():
 
     init_app(app)
     init_db(app)
+    seed_db(app)
 
     from models import Company  # Delay to avoid circular import
     with app.app_context():
