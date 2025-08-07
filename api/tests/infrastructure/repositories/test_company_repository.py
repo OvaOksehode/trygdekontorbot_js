@@ -37,16 +37,13 @@ def get_valid_company_data(**overrides):
     """Returnerer et komplett gyldig company-data-sett som kan tilpasses med overrides."""
     data = {
         'name': 'TestCompany',
-        'birth_date': date(1990, 1, 1),
-        'experience_in_years': 5,
-        'email': 'test@example.com',
     }
     data.update(overrides)
     return data
 
 def test_create_and_get(test_client):
     with test_client.application.app_context():
-        data = get_valid_company_data(email='get@example.com')
+        data = get_valid_company_data()
         company = CompanyRepository.create(data)
         fetched = CompanyRepository.get_by_id(company.id)
         assert fetched is not None
@@ -54,7 +51,7 @@ def test_create_and_get(test_client):
 
 def test_update(test_client):
     with test_client.application.app_context():
-        data = get_valid_company_data(email='update@example.com', name='OldName')
+        data = get_valid_company_data(name='OldName')
         company = CompanyRepository.create(data)
 
         CompanyRepository.update(company.id, {'name': 'NewName'})
@@ -63,7 +60,7 @@ def test_update(test_client):
 
 def test_delete(test_client):
     with test_client.application.app_context():
-        data = get_valid_company_data(email='delete@example.com', name='DeleteMe')
+        data = get_valid_company_data(name='DeleteMe')
         company = CompanyRepository.create(data)
 
         CompanyRepository.delete(company.id)
@@ -72,8 +69,8 @@ def test_delete(test_client):
 
 def test_get_all(test_client):
     with test_client.application.app_context():
-        CompanyRepository.create(get_valid_company_data(name='Company1', email='c1@example.com'))
-        CompanyRepository.create(get_valid_company_data(name='Company2', email='c2@example.com'))
+        CompanyRepository.create(get_valid_company_data(name='Company1'))
+        CompanyRepository.create(get_valid_company_data(name='Company2'))
 
         companies = CompanyRepository.get_all()
         names = [c.name for c in companies]
@@ -82,7 +79,7 @@ def test_get_all(test_client):
 
 def test_get_by_name(test_client):
     with test_client.application.app_context():
-        data = get_valid_company_data(name='LookupCompany', email='lookup@example.com')
+        data = get_valid_company_data(name='LookupCompany')
         created = CompanyRepository.create(data)
 
         fetched = CompanyRepository.get_by_name('LookupCompany')

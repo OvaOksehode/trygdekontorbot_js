@@ -1,0 +1,6 @@
+{
+  "create_company": {
+    "allowed_roles": ["company-creator"],
+    "denied_users": ["trygdekontor-bot"]
+  }
+}

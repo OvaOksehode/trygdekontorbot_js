@@ -1,7 +1,0 @@
-[
-  {
-    "username": "admin",
-    "secret": "changeme123",
-    "claims": ["admin", "read", "write"]
-  }
-]
