@@ -1,0 +1,11 @@
+services:
+  backend-api:
+    ports:
+      - "0:5000"   # expose backend on localhost:5000
+    networks:
+      - internal
+      - public        # attach to both internal + public networks
+
+networks:
+  public:
+    driver: bridge
