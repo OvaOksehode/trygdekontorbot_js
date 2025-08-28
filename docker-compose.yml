@@ -1,12 +1,12 @@
 services:
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.2.5
-    container_name: keycloak
-    ports:
-      - "8080:8080"
-    environment:
-      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
-      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
-    volumes:
-      - ./Keycloak:/opt/keycloak/data
-    command: ["start-dev"]
+  backend-api:
+    build: ./api
+    container_name: backend-api
+    networks:
+      - internal
+    restart: unless-stopped
+
+networks:
+  internal:
+    driver: bridge
+    internal: true
