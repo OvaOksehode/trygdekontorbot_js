@@ -6,6 +6,7 @@ from infrastructure.db.db_context import db, init_app
 from infrastructure.db.init_db import init_db
 from infrastructure.logging.logging_config import setup_logging
 from routes.api import api
+from flask_migrate import Migrate
 
 def create_app():
     setup_logging()
@@ -16,9 +17,7 @@ def create_app():
     init_app(app)
     init_db(app)
 
-    from models import Company  # Delay to avoid circular import
-    with app.app_context():
-        db.create_all()
+    Migrate(app, db)
 
     app.register_blueprint(api, url_prefix="/api")
     return app

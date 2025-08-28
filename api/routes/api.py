@@ -1,4 +1,7 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
+from services.mappers import company_to_viewmodel
+from models.Exceptions import CompanyAlreadyExistsError
+from models.CompanyViewModel import CompanyViewModel
 from pydantic import ValidationError
 from services.CompanyService import create_company
 
@@ -22,11 +25,18 @@ api = Blueprint("api", __name__)
 
 # POST localhost/api/company
 # ✅ Create company
-@api.route("/company", methods=["GET"])
+@api.route("/company", methods=["POST"])
 def request_create_company():
     try:
         data = CompanyDTO(**request.json).model_dump()
-        create_company(data)
-        return jsonify(data), 201
+        newCompany = create_company(data)
+        return company_to_viewmodel(newCompany).model_dump_json(), 201
     except ValidationError as error:
         return jsonify(error.errors()), 400
+    except CompanyAlreadyExistsError as error:
+        return jsonify({"error": str(error)}), 409
+    
+@api.errorhandler(500)
+def handle_internal_error(e):
+    current_app.logger.exception("Unexpected error in API")
+    return jsonify({"error": "Internal server error"}), 500

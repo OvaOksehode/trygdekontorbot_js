@@ -1,8 +1,4 @@
-from pydantic import BaseModel, EmailStr
-from datetime import date
+from pydantic import BaseModel
 
 class CompanyDTO(BaseModel):
   name: str
-  birth_date: date
-  experience_in_years: int
-  email: EmailStr

@@ -6,4 +6,4 @@ def init_db(app):
         # Import your models here, AFTER app context is pushed
         from models.Company import Company
         # Add more models here as needed
-        db.create_all()
+        # db.create_all()
