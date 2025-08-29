@@ -35,6 +35,7 @@ def request_create_company():
         return jsonify(error.errors()), 400
     except CompanyAlreadyExistsError as error:
         return jsonify({"error": str(error)}), 409
+    # catch all other 4xx errors
     
 @api.errorhandler(500)
 def handle_internal_error(e):
