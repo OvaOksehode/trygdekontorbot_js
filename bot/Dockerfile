@@ -1,5 +1,5 @@
 # Start med en Node.js-bilde
-FROM node:18-alpine
+FROM node:24-alpine3.21
 
 # Sett arbeidskatalogen til /app
 WORKDIR /bot
