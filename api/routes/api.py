@@ -1,4 +1,6 @@
+from http.client import HTTPException
 from flask import Blueprint, current_app, jsonify, request
+import werkzeug
 from services.mappers import company_to_viewmodel
 from models.Exceptions import CompanyAlreadyExistsError
 from models.CompanyViewModel import CompanyViewModel
@@ -33,10 +35,11 @@ def request_create_company():
         return company_to_viewmodel(newCompany).model_dump_json(), 201
     except ValidationError as error:
         return jsonify(error.errors()), 400
-    except CompanyAlreadyExistsError as error:
-        return jsonify({"error": str(error)}), 409
+        
     # catch all other 4xx errors
     
+
+
 @api.errorhandler(500)
 def handle_internal_error(e):
     current_app.logger.exception("Unexpected error in API")

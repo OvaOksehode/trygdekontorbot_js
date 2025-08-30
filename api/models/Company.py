@@ -1,5 +1,5 @@
 from datetime import datetime
-from infrastructure.db.db_context import db
+from infrastructure.db.db import db
 import uuid
 
 class Company(db.Model):

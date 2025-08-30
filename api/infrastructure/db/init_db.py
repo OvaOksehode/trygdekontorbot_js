@@ -1,9 +1,11 @@
 # infrastructure/db/init_db.py
-from infrastructure.db.db_context import db
+from flask_migrate import Migrate
+from infrastructure.db.db import db
 
 def init_db(app):
+    db.init_app(app)
+    # Make sure DB schema is created (instead of init_db wrapper)
     with app.app_context():
-        # Import your models here, AFTER app context is pushed
-        from models.Company import Company
-        # Add more models here as needed
-        # db.create_all()
+        db.create_all()
+    # Init migrations explicitly
+    Migrate(app, db)

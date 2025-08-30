@@ -1,5 +1,5 @@
 from models.Company import Company
-from infrastructure.db.db_context import db
+from infrastructure.db.db import db
 
 class CompanyRepository:
 
