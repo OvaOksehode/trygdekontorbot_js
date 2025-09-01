@@ -35,6 +35,8 @@ def request_create_company():
         return company_to_viewmodel(newCompany).model_dump_json(), 201
     except ValidationError as error:
         return jsonify(error.errors()), 400
+    except CompanyAlreadyExistsError as error:
+        return jsonify({"error": str(error)}), 409
         
     # catch all other 4xx errors
     
