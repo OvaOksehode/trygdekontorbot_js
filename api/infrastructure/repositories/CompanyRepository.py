@@ -6,7 +6,9 @@ class CompanyRepository:
     @staticmethod
     def get_by_id(company_id: int):
         return db.session.get(Company, company_id)
-
+    @staticmethod
+    def get_by_external_id(external_id: str):
+        return db.session.query(Company).filter_by(external_id=external_id).first()
     @staticmethod
     def get_by_name(name: str):
         return db.session.query(Company).filter_by(name=name).first()
