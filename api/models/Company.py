@@ -6,6 +6,7 @@ class Company(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     external_id = db.Column(db.String(36), nullable=False, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String, nullable=False)
+    owner = db.Column(db.Integer, nullable=False, server_default="-1")
     balance = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
