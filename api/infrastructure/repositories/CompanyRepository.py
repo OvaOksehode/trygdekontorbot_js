@@ -27,12 +27,8 @@ class CompanyRepository:
         return company
 
     @staticmethod
-    def update(company_id: int, update_data: dict):
-        company = CompanyRepository.get_by_id(company_id)
-        if not company:
-            return None
-        for key, value in update_data.items():
-            setattr(company, key, value)
+    def update(company: Company):
+        db.session.add(company)  # SQLAlchemy will track changes
         db.session.commit()
         return company
 

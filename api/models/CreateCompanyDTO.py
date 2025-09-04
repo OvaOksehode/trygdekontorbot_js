@@ -1,5 +1,5 @@
 from pydantic import BaseModel
 
-class CompanyDTO(BaseModel):
+class CreateCompanyDTO(BaseModel):
   name: str
   owner: int
