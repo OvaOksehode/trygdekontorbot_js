@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:17
+    container_name: trygdekontorbot-db
+    restart: always
+    environment:
+      POSTGRES_USER: flaskuser
+      POSTGRES_PASSWORD: supersecret
+      POSTGRES_DB: trygdekontorbot
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+  backend-api:
+    ports:
+      - "5001:5000"   # expose backend on localhost:5000
+    networks:
+      - internal
+      - public        # attach to both internal + public networks
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=postgresql+psycopg2://flaskuser:supersecret@db:5432/trygdekontorbot
+    depends_on:
+      - db
+volumes:
+  pgdata:
+
+networks:
+  public:
+    driver: bridge
