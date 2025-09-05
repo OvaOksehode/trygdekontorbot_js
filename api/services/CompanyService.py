@@ -22,3 +22,9 @@ def update_company(external_guid, updateDto):
         raise CompanyAlreadyExistsError(f"Company with name {updateDto.name} already exists")
     company.name = updateDto.name
     return CompanyRepository.update(company)
+
+def delete_company(external_guid):
+    company = CompanyRepository.get_by_external_id(external_guid);
+    if company is None:
+        raise CompanyNotFoundError(f"Company with external_guid {external_guid} not found")
+    CompanyRepository.delete(company.id)

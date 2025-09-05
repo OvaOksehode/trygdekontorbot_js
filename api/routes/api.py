@@ -1,29 +1,14 @@
 import uuid
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, Response, current_app, jsonify, request
 from models import UpdateCompanyDTO
 from services.mappers import company_to_viewmodel
 from models.Exceptions import CompanyAlreadyExistsError, CompanyNotFoundError, InvalidUpdateError, OwnerAlreadyHasCompanyError
 from pydantic import ValidationError
-from services.CompanyService import create_company, get_company_by_external_guid, update_company
+from services.CompanyService import create_company, delete_company, get_company_by_external_guid, update_company
 
 from models.CreateCompanyDTO import CreateCompanyDTO
 from models.UpdateCompanyDTO import UpdateCompanyDTO
 api = Blueprint("api", __name__)
-
-
-# Routes:
-# Company:
-# - Create user [ X ]
-# abt creating users: Normal api clients should only be able to manage their own company, clients with special access should be able to manage multiple. Same goes for other resources' CRUD operations.
-# - Read user   [ X ]
-# - Update user [  ]
-# - Delete user [  ]
-# - Claim trygd [  ]
-
-# Transaction:
-# - Create transaction  [  ]
-# - Read transaction    [  ]
-# - [Admin] spawn money [  ]
 
 # POST localhost/api/company
 # ✅ Create company
@@ -86,6 +71,21 @@ def request_update_company(external_guid: str):
         return jsonify({"error": str(error)}), 404
     except CompanyAlreadyExistsError as error:
         return jsonify({"error": str(error)}), 409
+    
+# DELETE localhost/api/company/<external_guid>
+# ❌ Delete company
+@api.route("/company/<external_guid>", methods=["DELETE"])
+def request_delete_company(external_guid: str):
+    try:
+        # validate UUID format
+        external_guid = str(uuid.UUID(external_guid))
+    except ValueError:
+        return jsonify({"error": "Invalid external_guid"}), 400
+    try:
+        delete_company(external_guid)
+        return Response(status=204)
+    except CompanyNotFoundError as error:
+        return jsonify({"error": str(error)}), 404
 
 @api.errorhandler(500)
 def handle_internal_error(e):
