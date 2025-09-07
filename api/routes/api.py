@@ -17,7 +17,11 @@ def request_create_company():
     try:
         data = CreateCompanyDTO(**request.json).model_dump()
         newCompany = create_company(data)
-        return company_to_viewmodel(newCompany).model_dump_json(), 201
+        return Response(
+            company_to_viewmodel(newCompany).model_dump_json(),  # indent optional for readability
+            status=201,
+            mimetype="application/json"
+        )
     except ValidationError as error:
         return jsonify(error.errors()), 400
     except CompanyAlreadyExistsError as error:
@@ -41,7 +45,11 @@ def request_get_company(external_guid: str):
     except CompanyNotFoundError as error:
         return jsonify({"error": str(error)}), 404
 
-    return company_to_viewmodel(company).model_dump_json(), 200
+    return Response(
+            company_to_viewmodel(company).model_dump_json(),  # indent optional for readability
+            status=200,
+            mimetype="application/json"
+        )
 
 # PATCH localhost/api/company/<external_guid>
 # 🔄 Update company info
@@ -63,7 +71,11 @@ def request_update_company(external_guid: str):
         updated_company = update_company(external_guid, dto)
 
         # ✅ Convert to viewmodel for response
-        return company_to_viewmodel(updated_company).model_dump_json(), 200
+        return Response(
+            company_to_viewmodel(updated_company).model_dump_json(),  # indent optional for readability
+            status=200,
+            mimetype="application/json"
+        )
 
     except ValidationError as error:
         return jsonify(error.errors()), 400
