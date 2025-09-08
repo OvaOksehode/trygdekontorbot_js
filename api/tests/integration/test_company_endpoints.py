@@ -65,7 +65,7 @@ def test_company_lifecycle(client):
     """End-to-end flow: create → update → get → delete"""
     payload = {
         "name": fake.company(),
-        "owner_id": random.randint(1, 1000)
+        "owner": random.randint(1, 1000)
     }
 
     # CREATE

@@ -1,7 +1,7 @@
 from typing import Annotated, Optional
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, ConfigDict, constr
 
 class UpdateCompanyDTO(BaseModel):
     name: Optional[Annotated[str, constr(min_length=3)]] = None
-    class Config:
-          extra = "forbid"  # <-- Reject any unexpected fields
+    
+    model_config = ConfigDict(extra="forbid")  # Reject unexpected fields
