@@ -1,11 +1,11 @@
-from infrastructure.db.db_context import db
+from infrastructure.db.db import db
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 class Transaction(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     amount = db.Column(db.Integer, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     is_processed = db.Column(db.Boolean, default=False)
 
     sender_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)

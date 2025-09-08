@@ -1,4 +1,4 @@
-from infrastructure.db.db_context import db
+from infrastructure.db.db import db
 import uuid
 from datetime import datetime
 
