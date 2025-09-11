@@ -1,13 +1,15 @@
 import uuid
 from flask import Blueprint, Response, current_app, jsonify, request
-from models import UpdateCompanyDTO
-from services.mappers import company_to_viewmodel
-from models.Exceptions import CompanyAlreadyExistsError, CompanyNotFoundError, InvalidUpdateError, OwnerAlreadyHasCompanyError
 from pydantic import ValidationError
+from services.mappers import company_to_viewmodel, company_transaction_to_viewmodel
+from services.LedgerEntryService import create_company_transaction
 from services.CompanyService import create_company, delete_company, get_company_by_external_guid, update_company
 
+from models.Exceptions import CompanyAlreadyExistsError, CompanyNotFoundError, InvalidUpdateError, OwnerAlreadyHasCompanyError
 from models.CreateCompanyDTO import CreateCompanyDTO
+from models.CreateCompanyTransactionDTO import CreateCompanyTransactionDTO
 from models.UpdateCompanyDTO import UpdateCompanyDTO
+
 api = Blueprint("api", __name__)
 
 # POST localhost/api/company
@@ -98,6 +100,24 @@ def request_delete_company(external_guid: str):
         return Response(status=204)
     except CompanyNotFoundError as error:
         return jsonify({"error": str(error)}), 404
+
+# POST localhost/api/company-transaction
+# ✅ Create company transaction
+@api.route("/company-transaction", methods=["POST"])
+def request_create_company_transaction():
+    # validate UUID format for sender and receiver
+    # validate that amount is > 0
+    # validate that amount is int not float or anything else (should be handled by pydantic, test this)
+    try:
+        dto_data = CreateCompanyTransactionDTO(**request.json)
+        newLedgerEntry, newTransaction = create_company_transaction(dto_data)
+        return Response(
+            company_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(),  # indent optional for readability
+            status=201,
+            mimetype="application/json"
+        )
+    except ValidationError as error:
+        return jsonify(error.errors()), 400
 
 @api.errorhandler(500)
 def handle_internal_error(e):

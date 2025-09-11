@@ -1,4 +1,7 @@
 # services/mappers.py
+from models.CompanyTransactionDetails import CompanyTransactionDetails
+from models.LedgerEntry import LedgerEntry
+from models.CompanyTransactionViewModel import CompanyTransactionViewModel
 from models.CompanyViewModel import CompanyViewModel
 
 def company_to_viewmodel(company):
@@ -9,4 +12,13 @@ def company_to_viewmodel(company):
         balance=company.balance,
         created_at=company.created_at,
         last_trygd_claim=company.last_trygd_claim,
+    )
+
+def company_transaction_to_viewmodel(ledgerEntry: LedgerEntry, companyTransaction: CompanyTransactionDetails):
+    return CompanyTransactionViewModel(
+        external_id=ledgerEntry.external_id,
+        amount=ledgerEntry.amount,
+        created_at=ledgerEntry.created_at,
+        receiver_id=ledgerEntry.receiver_id,
+        from_company_id=companyTransaction.from_company_id
     )

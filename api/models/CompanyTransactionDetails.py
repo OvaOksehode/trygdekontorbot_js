@@ -10,7 +10,7 @@ class CompanyTransactionDetails(db.Model):
         primary_key=True
     )
 
-    from_company = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    from_company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
     # Add other fields specific to CompanyTransactionDetails here
 
     # Relationship back to LedgerEntry (1:1)
