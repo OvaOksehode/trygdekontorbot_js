@@ -1,5 +1,5 @@
 # repositories/LedgerEntryRepository.py
-from typing import Tuple
+from typing import Optional, Tuple
 from infrastructure.db.db import db
 from models.LedgerEntry import LedgerEntry
 from models.CompanyTransactionDetails import CompanyTransactionDetails
@@ -9,6 +9,24 @@ class LedgerEntryRepository:
     @staticmethod
     def get_by_id(entry_id: int) -> LedgerEntry | None:
         return db.session.get(LedgerEntry, entry_id)
+
+    @staticmethod
+    def get_by_external_id(external_id: str) -> Optional[Tuple[LedgerEntry, CompanyTransactionDetails]]:
+        """
+        Fetch a LedgerEntry and its CompanyTransactionDetails by external_id.
+        Returns None if not found.
+        """
+        entry: LedgerEntry | None = (
+            db.session.query(LedgerEntry)
+            .filter_by(external_id=external_id)
+            .first()
+        )
+
+        if not entry:
+            return None
+
+        # assuming relationship is defined as LedgerEntry.company_transaction_details
+        return entry, entry.company_transaction_details
 
     @staticmethod
     def get_all() -> list[LedgerEntry]:

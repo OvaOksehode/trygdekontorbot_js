@@ -2,10 +2,10 @@ import uuid
 from flask import Blueprint, Response, current_app, jsonify, request
 from pydantic import ValidationError
 from services.mappers import company_to_viewmodel, company_transaction_to_viewmodel
-from services.LedgerEntryService import create_company_transaction
+from services.LedgerEntryService import create_company_transaction, get_company_transaction_by_external_guid
 from services.CompanyService import create_company, delete_company, get_company_by_external_guid, update_company
 
-from models.Exceptions import CompanyAlreadyExistsError, CompanyNotFoundError, InvalidUpdateError, OwnerAlreadyHasCompanyError
+from models.Exceptions import CompanyAlreadyExistsError, CompanyNotEnoughFundsError, CompanyNotFoundError, InvalidTransactionAmountError, InvalidUpdateError, LedgerEntryNotFoundError, OwnerAlreadyHasCompanyError
 from models.CreateCompanyDTO import CreateCompanyDTO
 from models.CreateCompanyTransactionDTO import CreateCompanyTransactionDTO
 from models.UpdateCompanyDTO import UpdateCompanyDTO
@@ -34,7 +34,7 @@ def request_create_company():
     # catch all other 4xx errors
 
 # GET localhost/api/company/<external_guid>
-# ⏎ Get company
+# ↩ Get company
 @api.route("/company/<external_guid>", methods=["GET"])
 def request_get_company(external_guid: str):
     try:
@@ -106,7 +106,6 @@ def request_delete_company(external_guid: str):
 @api.route("/company-transaction", methods=["POST"])
 def request_create_company_transaction():
     # validate UUID format for sender and receiver
-    # validate that amount is > 0
     # validate that amount is int not float or anything else (should be handled by pydantic, test this)
     try:
         dto_data = CreateCompanyTransactionDTO(**request.json)
@@ -118,6 +117,32 @@ def request_create_company_transaction():
         )
     except ValidationError as error:
         return jsonify(error.errors()), 400
+    except CompanyNotFoundError as error:
+        return jsonify({"error": str(error)}), 404
+    except InvalidTransactionAmountError as error:
+        return jsonify({"error": str(error)}), 400
+    except CompanyNotEnoughFundsError as error:
+        return jsonify({"error": str(error)}), 400
+
+# GET localhost/api/company-transaction/<external_guid>
+# ↩ Get company transaction
+@api.route("/company-transaction/<external_guid>", methods=["GET"])
+def request_get_company_transaction(external_guid: str):
+    try:
+        # validate UUID format
+        external_guid = str(uuid.UUID(external_guid))
+    except ValueError:
+        return jsonify({"error": "Invalid external_guid"}), 400
+    try:
+        newLedgerEntry, newTransaction = get_company_transaction_by_external_guid(external_guid)
+    except LedgerEntryNotFoundError as error:
+        return jsonify({"error": str(error)}), 404
+
+    return Response(
+            company_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(),  # indent optional for readability
+            status=201,
+            mimetype="application/json"
+        )
 
 @api.errorhandler(500)
 def handle_internal_error(e):
