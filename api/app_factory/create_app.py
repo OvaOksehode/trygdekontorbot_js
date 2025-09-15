@@ -4,29 +4,29 @@ from flask import Flask, jsonify
 import werkzeug
 from infrastructure.db.init_db import init_db
 from config import Settings
-from infrastructure.db.db import db
 from infrastructure.logging.logging_config import setup_logging
 from routes.api import api
 
 def create_app():
-
     setup_logging()
     settings = Settings()
 
-    # Init Flask
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = settings.database_string
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+    # 1️⃣ Bind DB
     init_db(app)
 
-    # Register blueprints directly
-    from routes.api import api
+    # 2️⃣ Import all models here (critical!)
+    import models  # Alembic sees them
+
+    # 3️⃣ Register blueprints
     app.register_blueprint(api, url_prefix="/api")
 
+    # 4️⃣ HTTP error handler
     @app.errorhandler(werkzeug.exceptions.HTTPException)
     def handle_http_exception(e):
-        # catches all 4xx (and any HTTPException)
         return jsonify({"error": e.description}), e.code
 
     return app
