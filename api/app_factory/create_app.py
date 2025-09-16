@@ -3,13 +3,12 @@
 from flask import Flask, jsonify
 import werkzeug
 from infrastructure.db.init_db import init_db
-from config import Settings
+from config import settings
 from infrastructure.logging.logging_config import setup_logging
 from routes.api import api
 
 def create_app():
     setup_logging()
-    settings = Settings()
 
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = settings.database_string

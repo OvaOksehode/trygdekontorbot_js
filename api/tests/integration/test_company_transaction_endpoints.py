@@ -30,7 +30,7 @@ def test_create_company_transaction(client, company):
     receiver = res_receiver.get_json()
 
     tx_payload = {
-        "amount": 100,  # Needs to be adjusted after the starter cash has been implemented
+        "amount": 90,  # Needs to be adjusted after the starter cash has been implemented
         "receiver_id": receiver["external_id"],
         "from_company_id": sender["external_id"],
     }
@@ -40,8 +40,8 @@ def test_create_company_transaction(client, company):
     tx = res.get_json()
 
     assert tx["amount"] == tx_payload["amount"]
-    assert tx["receiver"]["external_id"] == receiver["external_id"]
-    assert tx["sender"]["external_id"] == sender["external_id"]
+    assert tx["receiver_id"] == receiver["external_id"]
+    assert tx["from_company_id"] == sender["external_id"]
 
 
 def test_create_transaction_invalid_amount(client, company):
@@ -68,7 +68,7 @@ def test_create_transaction_nonexistent_company(client, company):
     fake_guid = str(uuid.uuid4())
 
     tx_payload = {
-        "amount": 100,
+        "amount": 90,
         "receiver_id": fake_guid,  # ❌ not in DB
         "from_company_id": company["external_id"],
     }

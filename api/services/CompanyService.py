@@ -1,13 +1,38 @@
-from models import CreateCompanyDTO
+from services.LedgerEntryService import create_check_transaction
+from models.Company import Company
+from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
+from models.CreateCompanyDTO import CreateCompanyDTO
 from models.Exceptions import CompanyAlreadyExistsError, CompanyNotFoundError, InvalidUpdateError, OwnerAlreadyHasCompanyError
 from infrastructure.repositories.CompanyRepository import CompanyRepository
 
+from config import settings
+
 def create_company(company_data: CreateCompanyDTO):
-    if CompanyRepository.get_by_owner_id(company_data['owner']) is not None:
-        raise OwnerAlreadyHasCompanyError(f"Owner with id {company_data['owner']} already has a company")
-    if CompanyRepository.get_by_name(company_data['name']) is not None:
-        raise CompanyAlreadyExistsError(f"Company with name {company_data['name']} already exists")
-    return CompanyRepository.create(company_data) # Should get turned into domain model before this
+    # 1️⃣ Validate uniqueness
+    if CompanyRepository.get_by_owner_id(company_data.owner) is not None:
+        raise OwnerAlreadyHasCompanyError(f"Owner with id {company_data.owner} already has a company")
+    if CompanyRepository.get_by_name(company_data.name) is not None:
+        raise CompanyAlreadyExistsError(f"Company with name {company_data.name} already exists")
+
+    # 2️⃣ Convert DTO -> ORM model
+    company_model = Company(
+        name=company_data.name,
+        owner=company_data.owner,
+        balance=0  # optional default; starter cash will be added separately
+    )
+
+    # 3️⃣ Persist the company
+    new_company = CompanyRepository.create(company_model)
+
+    # 4️⃣ Give starter cash
+    starter_cash_dto = CreateCheckTransactionDTO(
+        amount=settings.starter_cash,
+        receiver_id=new_company.external_id,
+        from_authority=settings.default_check_authority
+    )
+    create_check_transaction(starter_cash_dto)
+
+    return new_company
 
 def get_company_by_external_guid(external_guid: str):
     company = CompanyRepository.get_by_external_id(external_guid);

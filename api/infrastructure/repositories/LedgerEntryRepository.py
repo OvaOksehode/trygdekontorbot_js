@@ -1,6 +1,7 @@
 # repositories/LedgerEntryRepository.py
 from typing import Optional, Tuple
 from infrastructure.db.db import db
+from models.CheckTransactionDetails import CheckTransactionDetails
 from models.LedgerEntry import LedgerEntry
 from models.CompanyTransactionDetails import CompanyTransactionDetails
 
@@ -39,6 +40,26 @@ class LedgerEntryRepository:
 
     @staticmethod
     def createCompanyTransaction(ledger_entry: LedgerEntry, tx_details: CompanyTransactionDetails) -> Tuple[LedgerEntry, CompanyTransactionDetails]:
+        """
+        Persists a LedgerEntry and its corresponding CompanyTransactionDetails
+        in a single atomic transaction, setting up the 1:1 relationship.
+        """
+
+        # Link 1:1 relationship
+        tx_details.ledger_entry = ledger_entry
+
+        # Persist both objects
+        db.session.add(ledger_entry)
+        db.session.add(tx_details)
+
+        # Commit atomically
+        db.session.commit()
+
+        # Now tx_details.id == ledger_entry.id because of FK
+        return ledger_entry, tx_details
+
+    @staticmethod
+    def createCheckTransaction(ledger_entry: LedgerEntry, tx_details: CheckTransactionDetails) -> Tuple[LedgerEntry, CheckTransactionDetails]:
         """
         Persists a LedgerEntry and its corresponding CompanyTransactionDetails
         in a single atomic transaction, setting up the 1:1 relationship.

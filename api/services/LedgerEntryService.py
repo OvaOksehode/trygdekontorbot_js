@@ -1,4 +1,6 @@
 from typing import Tuple
+from models.CheckTransactionDetails import CheckTransactionDetails
+from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
 from models.Exceptions import CompanyNotEnoughFundsError, CompanyNotFoundError, LedgerEntryNotFoundError
 from infrastructure.repositories.CompanyRepository import CompanyRepository
 from infrastructure.repositories.LedgerEntryRepository import LedgerEntryRepository
@@ -35,6 +37,34 @@ def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> Tuple[L
     receiver.balance += dto_data.amount
 
     CompanyRepository.update(sender)
+    CompanyRepository.update(receiver)
+
+    return persisted_ledger, persisted_tx
+
+def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> Tuple[LedgerEntry, CheckTransactionDetails]:
+    # Check that sender and receiver exists
+    receiver = CompanyRepository.get_by_external_id(dto_data.receiver_id)
+
+    if receiver is None:
+        raise CompanyNotFoundError(f"Company with external_guid {dto_data.from_company_id} not found")
+
+    # Check that sender has enough balance
+    newLedgerEntry = LedgerEntry(
+        amount = dto_data.amount,
+        receiver_id = dto_data.receiver_id
+    )
+    newCheckTransactionDetails = CheckTransactionDetails(
+        from_authority = dto_data.from_authority
+    )
+    # Persist ledger + transaction details via repository
+    persisted_ledger, persisted_tx = LedgerEntryRepository.createCompanyTransaction(
+        newLedgerEntry,
+        newCheckTransactionDetails
+    )
+
+    # Update balances after persistence
+    receiver.balance += dto_data.amount
+
     CompanyRepository.update(receiver)
 
     return persisted_ledger, persisted_tx

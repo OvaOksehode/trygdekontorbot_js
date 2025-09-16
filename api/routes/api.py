@@ -1,11 +1,12 @@
 import uuid
 from flask import Blueprint, Response, current_app, jsonify, request
 from pydantic import ValidationError
-from services.mappers import company_to_viewmodel, company_transaction_to_viewmodel
-from services.LedgerEntryService import create_company_transaction, get_company_transaction_by_external_guid
+from services.mappers import check_transaction_to_viewmodel, company_to_viewmodel, company_transaction_to_viewmodel
+from services.LedgerEntryService import create_check_transaction, create_company_transaction, get_company_transaction_by_external_guid
 from services.CompanyService import create_company, delete_company, get_company_by_external_guid, update_company
 
 from models.Exceptions import CompanyAlreadyExistsError, CompanyNotEnoughFundsError, CompanyNotFoundError, InvalidTransactionAmountError, InvalidUpdateError, LedgerEntryNotFoundError, OwnerAlreadyHasCompanyError
+from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
 from models.CreateCompanyDTO import CreateCompanyDTO
 from models.CreateCompanyTransactionDTO import CreateCompanyTransactionDTO
 from models.UpdateCompanyDTO import UpdateCompanyDTO
@@ -17,7 +18,7 @@ api = Blueprint("api", __name__)
 @api.route("/company", methods=["POST"])
 def request_create_company():
     try:
-        data = CreateCompanyDTO(**request.json).model_dump()
+        data = CreateCompanyDTO(**request.json)
         newCompany = create_company(data)
         return Response(
             company_to_viewmodel(newCompany).model_dump_json(),  # indent optional for readability
@@ -143,6 +144,29 @@ def request_get_company_transaction(external_guid: str):
             status=201,
             mimetype="application/json"
         )
+
+# POST localhost/api/check-transaction
+# ✅ Create check transaction
+@api.route("/check-transaction", methods=["POST"])
+def request_create_check_transaction():
+    # validate UUID format for sender and receiver
+    # validate that amount is int not float or anything else (should be handled by pydantic, test this)
+    try:
+        dto_data = CreateCheckTransactionDTO(**request.json)
+        newLedgerEntry, newTransaction = create_check_transaction(dto_data)
+        return Response(
+            check_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(),  # indent optional for readability
+            status=201,
+            mimetype="application/json"
+        )
+    except ValidationError as error:
+        return jsonify(error.errors()), 400
+    except CompanyNotFoundError as error:
+        return jsonify({"error": str(error)}), 404
+    except InvalidTransactionAmountError as error:
+        return jsonify({"error": str(error)}), 400
+    except CompanyNotEnoughFundsError as error:
+        return jsonify({"error": str(error)}), 400
 
 @api.errorhandler(500)
 def handle_internal_error(e):
