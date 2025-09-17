@@ -14,7 +14,7 @@ class CompanyRepository:
         return db.session.query(Company).filter_by(name=name).first()
     @staticmethod
     def get_by_owner_id(owner_id: int):
-        return db.session.query(Company).filter_by(owner=owner_id).first()
+        return db.session.query(Company).filter_by(owner_id=owner_id).first()
     @staticmethod
     def get_all():
         return db.session.query(Company).all()

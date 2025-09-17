@@ -6,7 +6,8 @@ class CompanyTransactionDetails(db.Model):
     __tablename__ = "CompanyTransactionDetails"  # singular, PascalCase
 
     # PK is also FK to LedgerEntry
-    LedgerEntryID = db.Column(
+    ledger_entry_id = db.Column(
+        "LedgerEntryID",
         db.Integer,
         db.ForeignKey(
             "LedgerEntry.LedgerEntryID",
@@ -15,7 +16,8 @@ class CompanyTransactionDetails(db.Model):
         primary_key=True
     )
 
-    SenderCompanyID = db.Column(
+    sender_company_id = db.Column(
+        "SenderCompanyID",
         db.String(36),
         db.ForeignKey(
             "Company.CompanyID",
@@ -26,14 +28,17 @@ class CompanyTransactionDetails(db.Model):
     # Add other fields specific to CompanyTransactionDetails here
 
     # Relationship back to LedgerEntry (1:1)
-    LedgerEntry = db.relationship(
+    ledger_entry = db.relationship(
         "LedgerEntry",
-        backref=db.backref('CompanyTransactionDetails', uselist=False),
+        backref=db.backref('company_transaction_details', uselist=False),
         uselist=False
     )
 
-    SenderCompany = db.relationship(
+    sender_company = db.relationship(
         "Company",
-        foreign_keys=[SenderCompanyID],
-        backref="OutgoingTransactions"  # all outgoing transactions initiated by this company
+        foreign_keys=[sender_company_id],
+        backref="outgoing_transactions"  # all outgoing transactions initiated by this company
     )
+    
+    class Config:
+      validate_by_name = True

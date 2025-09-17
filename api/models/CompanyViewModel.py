@@ -2,12 +2,12 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 class CompanyViewModel(BaseModel):
-    external_id: str = Field(..., alias="ExternalID")
-    name: str = Field(..., alias="Name")
-    owner: int = Field(..., alias="OwnerID")
-    balance: int = Field(..., alias="Balance")
-    created_at: datetime = Field(..., alias="CreatedAt")
-    last_trygd_claim: datetime | None = Field(None, alias="LastTrygdClaim")
+    external_id: str = Field(..., alias="externalId")
+    name: str = Field(..., alias="name")
+    owner_id: int = Field(..., alias="ownerId")
+    balance: int = Field(..., alias="balance")
+    created_at: datetime = Field(..., alias="createdAt")
+    last_trygd_claim: datetime | None = Field(None, alias="lastTrygdClaim")
 
     class Config:
         validate_by_name = True  # supports both aliases and field names

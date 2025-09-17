@@ -15,8 +15,8 @@ def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> Tuple[L
     if sender is None or receiver is None:
         raise CompanyNotFoundError(f"Company with external_guid {dto_data.from_company_id} not found")
     
-    if dto_data.amount > sender.Balance:
-        raise CompanyNotEnoughFundsError(f"Sender {sender.Name} does not have enough funds to complete the requested transaction")
+    if dto_data.amount > sender.balance:
+        raise CompanyNotEnoughFundsError(f"Sender {sender.name} does not have enough funds to complete the requested transaction")
 
     # Check that sender has enough balance
     newLedgerEntry = LedgerEntry(
@@ -33,8 +33,8 @@ def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> Tuple[L
     )
 
     # Update balances after persistence
-    sender.Balance -= dto_data.amount
-    receiver.Balance += dto_data.amount
+    sender.balance -= dto_data.amount
+    receiver.balance += dto_data.amount
 
     CompanyRepository.update(sender)
     CompanyRepository.update(receiver)
@@ -43,7 +43,7 @@ def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> Tuple[L
 
 def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> Tuple[LedgerEntry, CheckTransactionDetails]:
     # Check that sender and receiver exists
-    receiver = CompanyRepository.get_by_external_id(dto_data.receiver_id)
+    receiver = CompanyRepository.get_by_external_id(dto_data.receiver_company_id)
 
     if receiver is None:
         raise CompanyNotFoundError(f"Company with external_guid {dto_data.from_company_id} not found")
@@ -51,10 +51,10 @@ def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> Tuple[Ledge
     # Check that sender has enough balance
     newLedgerEntry = LedgerEntry(
         amount = dto_data.amount,
-        receiver_id = dto_data.receiver_id
+        receiver_company_id = dto_data.receiver_company_id
     )
     newCheckTransactionDetails = CheckTransactionDetails(
-        from_authority = dto_data.from_authority
+        sender_authority = dto_data.sender_authority
     )
     # Persist ledger + transaction details via repository
     persisted_ledger, persisted_tx = LedgerEntryRepository.createCompanyTransaction(
@@ -63,7 +63,7 @@ def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> Tuple[Ledge
     )
 
     # Update balances after persistence
-    receiver.Balance += dto_data.amount
+    receiver.balance += dto_data.amount
 
     CompanyRepository.update(receiver)
 

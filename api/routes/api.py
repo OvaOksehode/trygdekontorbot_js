@@ -1,6 +1,8 @@
 import uuid
 from flask import Blueprint, Response, current_app, jsonify, request
 from pydantic import ValidationError
+from models.CompanyViewModel import CompanyViewModel
+from models.CompanyTransactionViewModel import CompanyTransactionViewModel
 from services.mappers import check_transaction_to_viewmodel, company_to_viewmodel, company_transaction_to_viewmodel
 from services.LedgerEntryService import create_check_transaction, create_company_transaction, get_company_transaction_by_external_guid
 from services.CompanyService import create_company, delete_company, get_company_by_external_guid, update_company
@@ -21,7 +23,7 @@ def request_create_company():
         data = CreateCompanyDTO(**request.json)
         newCompany = create_company(data)
         return Response(
-            company_to_viewmodel(newCompany).model_dump_json(),  # indent optional for readability
+            CompanyViewModel.model_validate(newCompany).model_dump_json(by_alias=True),  # indent optional for readability
             status=201,
             mimetype="application/json"
         )

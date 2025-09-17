@@ -10,7 +10,7 @@ def company_payload():
     """Generate random company creation payload."""
     return {
         "name": fake.company(),
-        "owner": random.randint(1, 1000)
+        "ownerId": random.randint(1, 1000)
     }
 
 def test_create_company(client, company_payload):
@@ -18,7 +18,7 @@ def test_create_company(client, company_payload):
     assert res.status_code == 201
     data = res.get_json()
     assert data["name"] == company_payload["name"]
-    assert "external_id" in data
+    assert "externalId" in data
 
 def test_create_company_missing_fields(client):
     """Creating with missing required fields should fail."""

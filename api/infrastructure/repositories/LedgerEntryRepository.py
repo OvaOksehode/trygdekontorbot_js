@@ -20,8 +20,8 @@ class LedgerEntryRepository:
         """
         result = (
             db.session.query(LedgerEntry, CompanyTransactionDetails)
-            .join(CompanyTransactionDetails, CompanyTransactionDetails.LedgerEntryID == LedgerEntry.LedgerEntryID)
-            .filter(LedgerEntry.ExternalID == external_id)
+            .join(CompanyTransactionDetails, CompanyTransactionDetails.ledger_entry_id == LedgerEntry.ledger_entry_id)
+            .filter(LedgerEntry.external_id == external_id)
             .first()
         )
 
@@ -47,7 +47,7 @@ class LedgerEntryRepository:
         """
 
         # Link 1:1 relationship
-        tx_details.LedgerEntry = ledger_entry
+        tx_details.ledger_entry = ledger_entry
 
         # Persist both objects
         db.session.add(ledger_entry)
@@ -67,7 +67,7 @@ class LedgerEntryRepository:
         """
 
         # Link 1:1 relationship
-        tx_details.LedgerEntry = ledger_entry
+        tx_details.ledger_entry = ledger_entry
 
         # Persist both objects
         db.session.add(ledger_entry)

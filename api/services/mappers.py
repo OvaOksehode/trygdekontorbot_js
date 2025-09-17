@@ -18,18 +18,18 @@ def company_to_viewmodel(company):
 
 def company_transaction_to_viewmodel(ledgerEntry: LedgerEntry, companyTransaction: CompanyTransactionDetails):
     return CompanyTransactionViewModel(
-        external_id=ledgerEntry.ExternalID,
-        amount=ledgerEntry.Amount,
-        created_at=ledgerEntry.CreatedAt,
-        receiver_id=ledgerEntry.ReceiverCompanyID,
-        from_company_id=companyTransaction.SenderCompanyID
+        external_id=ledgerEntry.external_id,
+        amount=ledgerEntry.amount,
+        created_at=ledgerEntry.created_at,
+        receiver_id=ledgerEntry.receiver_company_id,
+        from_company_id=companyTransaction.sender_company_id
     )
 
 def check_transaction_to_viewmodel(ledgerEntry: LedgerEntry, checkTransaction: CheckTransactionDetails):
     return CheckTransactionViewModel(
-        external_id=ledgerEntry.ExternalID,
-        amount=ledgerEntry.Amount,
-        created_at=ledgerEntry.CreatedAt,
-        receiver_id=ledgerEntry.ReceiverCompanyID,
-        from_authority=checkTransaction.SenderAuthority
+        external_id=ledgerEntry.external_id,
+        amount=ledgerEntry.amount,
+        created_at=ledgerEntry.created_at,
+        receiver_id=ledgerEntry.receiver_company_id,
+        from_authority=checkTransaction.sender_authority
     )
