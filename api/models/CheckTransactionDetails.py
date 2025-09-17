@@ -3,19 +3,24 @@ from infrastructure.db.db import db
 from datetime import UTC, datetime
 
 class CheckTransactionDetails(db.Model):
+    __tablename__ = "CheckTransactionDetails"  # plural table name
+
     # PK is also FK to LedgerEntry
-    id = db.Column(
+    LedgerEntryID = db.Column(
         db.Integer,
-        db.ForeignKey('ledger_entry.id'),
+        db.ForeignKey(
+            "LedgerEntry.LedgerEntryID",
+            name="fk_CheckTransactionDetails_LedgerEntryID"
+        ),
         primary_key=True
     )
 
-    from_authority = db.Column(db.String, nullable=False)
+    SenderAuthority = db.Column(db.String, nullable=False)
     # Add other fields specific to CompanyTransactionDetails here
 
     # Relationship back to LedgerEntry (1:1)
-    ledger_entry = db.relationship(
-        LedgerEntry,
-        backref=db.backref('check_transaction_details', uselist=False),
+    LedgerEntry = db.relationship(
+        "LedgerEntry",
+        backref=db.backref('CheckTransactionDetails', uselist=False),
         uselist=False
     )

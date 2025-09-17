@@ -3,19 +3,37 @@ from infrastructure.db.db import db
 from datetime import UTC, datetime
 
 class CompanyTransactionDetails(db.Model):
+    __tablename__ = "CompanyTransactionDetails"  # singular, PascalCase
+
     # PK is also FK to LedgerEntry
-    id = db.Column(
+    LedgerEntryID = db.Column(
         db.Integer,
-        db.ForeignKey('ledger_entry.id'),
+        db.ForeignKey(
+            "LedgerEntry.LedgerEntryID",
+            name="fk_CompanyTransactionDetails_LedgerEntryID"
+        ),
         primary_key=True
     )
 
-    from_company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)
+    SenderCompanyID = db.Column(
+        db.String(36),
+        db.ForeignKey(
+            "Company.CompanyID",
+            name="fk_CompanyTransactionDetails_SenderCompanyID"
+        ),
+        nullable=False
+    )
     # Add other fields specific to CompanyTransactionDetails here
 
     # Relationship back to LedgerEntry (1:1)
-    ledger_entry = db.relationship(
-        LedgerEntry,
-        backref=db.backref('company_transaction_details', uselist=False),
+    LedgerEntry = db.relationship(
+        "LedgerEntry",
+        backref=db.backref('CompanyTransactionDetails', uselist=False),
         uselist=False
+    )
+
+    SenderCompany = db.relationship(
+        "Company",
+        foreign_keys=[SenderCompanyID],
+        backref="OutgoingTransactions"  # all outgoing transactions initiated by this company
     )

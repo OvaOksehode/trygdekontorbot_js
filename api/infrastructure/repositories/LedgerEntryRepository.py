@@ -1,5 +1,6 @@
 # repositories/LedgerEntryRepository.py
 from typing import Optional, Tuple
+from models.Exceptions import LedgerEntryNotFoundError
 from infrastructure.db.db import db
 from models.CheckTransactionDetails import CheckTransactionDetails
 from models.LedgerEntry import LedgerEntry
@@ -12,22 +13,22 @@ class LedgerEntryRepository:
         return db.session.get(LedgerEntry, entry_id)
 
     @staticmethod
-    def get_by_external_id(external_id: str) -> Optional[Tuple[LedgerEntry, CompanyTransactionDetails]]:
+    def get_company_transaction_by_external_id(external_id: str) -> Optional[Tuple[LedgerEntry, CompanyTransactionDetails]]:
         """
-        Fetch a LedgerEntry and its CompanyTransactionDetails by external_id.
-        Returns None if not found.
+        Fetch a LedgerEntry with its CompanyTransactionDetails by external_id.
+        Returns None if not found or if no company transaction details exist.
         """
-        entry: LedgerEntry | None = (
-            db.session.query(LedgerEntry)
-            .filter_by(external_id=external_id)
+        result = (
+            db.session.query(LedgerEntry, CompanyTransactionDetails)
+            .join(CompanyTransactionDetails, CompanyTransactionDetails.LedgerEntryID == LedgerEntry.LedgerEntryID)
+            .filter(LedgerEntry.ExternalID == external_id)
             .first()
         )
 
-        if not entry:
-            return None
+        if result is None:
+            raise LedgerEntryNotFoundError(f"Company transaction with external_id {external_id} not found")
 
-        # assuming relationship is defined as LedgerEntry.company_transaction_details
-        return entry, entry.company_transaction_details
+        return result  # will be (LedgerEntry, CompanyTransactionDetails) or None
 
     @staticmethod
     def get_all() -> list[LedgerEntry]:
@@ -46,7 +47,7 @@ class LedgerEntryRepository:
         """
 
         # Link 1:1 relationship
-        tx_details.ledger_entry = ledger_entry
+        tx_details.LedgerEntry = ledger_entry
 
         # Persist both objects
         db.session.add(ledger_entry)
@@ -66,7 +67,7 @@ class LedgerEntryRepository:
         """
 
         # Link 1:1 relationship
-        tx_details.ledger_entry = ledger_entry
+        tx_details.LedgerEntry = ledger_entry
 
         # Persist both objects
         db.session.add(ledger_entry)

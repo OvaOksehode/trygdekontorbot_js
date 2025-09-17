@@ -27,7 +27,7 @@ def create_company(company_data: CreateCompanyDTO):
     # 4️⃣ Give starter cash
     starter_cash_dto = CreateCheckTransactionDTO(
         amount=settings.starter_cash,
-        receiver_id=new_company.external_id,
+        receiver_id=new_company.ExternalID,
         from_authority=settings.default_check_authority
     )
     create_check_transaction(starter_cash_dto)
@@ -46,11 +46,11 @@ def update_company(external_guid, updateDto):
         raise CompanyNotFoundError(f"Company with external_guid {external_guid} not found")
     if CompanyRepository.get_by_name(updateDto.name) is not None:
         raise CompanyAlreadyExistsError(f"Company with name {updateDto.name} already exists")
-    company.name = updateDto.name
+    company.Name = updateDto.name
     return CompanyRepository.update(company)
 
 def delete_company(external_guid):
     company = CompanyRepository.get_by_external_id(external_guid);
     if company is None:
         raise CompanyNotFoundError(f"Company with external_guid {external_guid} not found")
-    CompanyRepository.delete(company.id)
+    CompanyRepository.delete(company.CompanyID)

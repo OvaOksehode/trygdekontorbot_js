@@ -15,8 +15,8 @@ def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> Tuple[L
     if sender is None or receiver is None:
         raise CompanyNotFoundError(f"Company with external_guid {dto_data.from_company_id} not found")
     
-    if dto_data.amount > sender.balance:
-        raise CompanyNotEnoughFundsError(f"Sender {sender.name} does not have enough funds to complete the requested transaction")
+    if dto_data.amount > sender.Balance:
+        raise CompanyNotEnoughFundsError(f"Sender {sender.Name} does not have enough funds to complete the requested transaction")
 
     # Check that sender has enough balance
     newLedgerEntry = LedgerEntry(
@@ -33,8 +33,8 @@ def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> Tuple[L
     )
 
     # Update balances after persistence
-    sender.balance -= dto_data.amount
-    receiver.balance += dto_data.amount
+    sender.Balance -= dto_data.amount
+    receiver.Balance += dto_data.amount
 
     CompanyRepository.update(sender)
     CompanyRepository.update(receiver)
@@ -63,14 +63,14 @@ def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> Tuple[Ledge
     )
 
     # Update balances after persistence
-    receiver.balance += dto_data.amount
+    receiver.Balance += dto_data.amount
 
     CompanyRepository.update(receiver)
 
     return persisted_ledger, persisted_tx
 
 def get_company_transaction_by_external_guid(external_guid: str):
-    transaction = LedgerEntryRepository.get_by_external_id(external_guid);
+    transaction = LedgerEntryRepository.get_company_transaction_by_external_id(external_guid);
     if transaction is None:
         raise LedgerEntryNotFoundError(f"Company with external_guid {external_guid} not found")
     return transaction
