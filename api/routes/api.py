@@ -51,7 +51,8 @@ def request_get_company(external_guid: str):
         return jsonify({"error": str(error)}), 404
 
     return Response(
-            company_to_viewmodel(company).model_dump_json(),  # indent optional for readability
+            CompanyViewModel.model_validate(company).model_dump_json(by_alias=True),  # indent optional for readability
+            # company_to_viewmodel(company).model_dump_json(),  # indent optional for readability
             status=200,
             mimetype="application/json"
         )
@@ -77,7 +78,8 @@ def request_update_company(external_guid: str):
 
         # ✅ Convert to viewmodel for response
         return Response(
-            company_to_viewmodel(updated_company).model_dump_json(),  # indent optional for readability
+            CompanyViewModel.model_validate(updated_company).model_dump_json(by_alias=True),  # indent optional for readability
+            # company_to_viewmodel(updated_company).model_dump_json(),  # indent optional for readability
             status=200,
             mimetype="application/json"
         )
