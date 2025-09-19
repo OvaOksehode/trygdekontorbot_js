@@ -116,7 +116,7 @@ def request_create_company_transaction():
         dto_data = CreateCompanyTransactionDTO(**request.json)
         newLedgerEntry, newTransaction = create_company_transaction(dto_data)
         return Response(
-            company_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(),  # indent optional for readability
+            company_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(by_alias=True),  # indent optional for readability
             status=201,
             mimetype="application/json"
         )
@@ -144,7 +144,7 @@ def request_get_company_transaction(external_guid: str):
         return jsonify({"error": str(error)}), 404
 
     return Response(
-            company_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(),  # indent optional for readability
+            company_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(by_alias=True),  # indent optional for readability
             status=201,
             mimetype="application/json"
         )

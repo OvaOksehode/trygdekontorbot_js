@@ -10,7 +10,7 @@ from config import settings
 def create_company(company_data: CreateCompanyDTO):
     # 1️⃣ Validate uniqueness
     if CompanyRepository.get_by_owner_id(company_data.owner_id) is not None:
-        raise OwnerAlreadyHasCompanyError(f"Owner with id {company_data.owner} already has a company")
+        raise OwnerAlreadyHasCompanyError(f"Owner with id {company_data.owner_id} already has a company")
     if CompanyRepository.get_by_name(company_data.name) is not None:
         raise CompanyAlreadyExistsError(f"Company with name {company_data.name} already exists")
 

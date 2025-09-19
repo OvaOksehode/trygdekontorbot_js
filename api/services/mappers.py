@@ -21,8 +21,8 @@ def company_transaction_to_viewmodel(ledgerEntry: LedgerEntry, companyTransactio
         external_id=ledgerEntry.external_id,
         amount=ledgerEntry.amount,
         created_at=ledgerEntry.created_at,
-        receiver_id=ledgerEntry.receiver_company_id,
-        from_company_id=companyTransaction.sender_company_id
+        receiver_company_id=ledgerEntry.receiver_company_id,
+        sender_company_id=companyTransaction.sender_company_id
     )
 
 def check_transaction_to_viewmodel(ledgerEntry: LedgerEntry, checkTransaction: CheckTransactionDetails):

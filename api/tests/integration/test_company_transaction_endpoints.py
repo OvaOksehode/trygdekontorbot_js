@@ -11,7 +11,7 @@ def company(client):
     """Helper to create a company and return its payload."""
     payload = {
         "name": fake.company(),
-        "owner": random.randint(1, 1000),
+        "ownerId": random.randint(1, 1000),
     }
     res = client.post("/api/company", json=payload)
     assert res.status_code == 201
@@ -23,7 +23,7 @@ def test_create_company_transaction(client, company):
     sender = company
     receiver_payload = {
         "name": fake.company(),
-        "owner": random.randint(1001, 2000),
+        "ownerId": random.randint(1001, 2000),
     }
     res_receiver = client.post("/api/company", json=receiver_payload)
     assert res_receiver.status_code == 201
@@ -31,8 +31,8 @@ def test_create_company_transaction(client, company):
 
     tx_payload = {
         "amount": 90,  # Needs to be adjusted after the starter cash has been implemented
-        "receiver_id": receiver["external_id"],
-        "from_company_id": sender["external_id"],
+        "receiverCompanyId": receiver["externalId"],
+        "senderCompanyId": sender["externalId"],
     }
 
     res = client.post("/api/company-transaction", json=tx_payload)
@@ -40,22 +40,22 @@ def test_create_company_transaction(client, company):
     tx = res.get_json()
 
     assert tx["amount"] == tx_payload["amount"]
-    assert tx["receiver_id"] == receiver["external_id"]
-    assert tx["from_company_id"] == sender["external_id"]
+    assert tx["receiverCompanyId"] == receiver["externalId"]
+    assert tx["senderCompanyId"] == sender["externalId"]
 
 
 def test_create_transaction_invalid_amount(client, company):
     """Transaction with amount <= 0 should fail validation."""
     receiver_payload = {
         "name": fake.company(),
-        "owner": random.randint(2001, 3000),
+        "ownerId": random.randint(2001, 3000),
     }
     receiver = client.post("/api/company", json=receiver_payload).get_json()
 
     tx_payload = {
         "amount": 0,  # ❌ invalid
-        "receiver_id": receiver["external_id"],
-        "from_company_id": company["external_id"],
+        "receiverId": receiver["externalId"],
+        "fromCompanyId": company["externalId"],
     }
 
     res = client.post("/api/company-transaction", json=tx_payload)
@@ -69,8 +69,8 @@ def test_create_transaction_nonexistent_company(client, company):
 
     tx_payload = {
         "amount": 90,
-        "receiver_id": fake_guid,  # ❌ not in DB
-        "from_company_id": company["external_id"],
+        "receiverCompanyId": fake_guid,  # ❌ not in DB
+        "senderCompanyId": company["externalId"],
     }
 
     res = client.post("/api/company-transaction", json=tx_payload)
@@ -82,26 +82,26 @@ def test_get_company_transaction(client, company):
     """Create a transaction, then fetch it by external_id."""
     receiver_payload = {
         "name": fake.company(),
-        "owner": random.randint(3001, 4000),
+        "ownerId": random.randint(3001, 4000),
     }
     receiver = client.post("/api/company", json=receiver_payload).get_json()
 
     tx_payload = {
         "amount": 50,   # also reliant on starter cash
-        "receiver_id": receiver["external_id"],
-        "from_company_id": company["external_id"],
+        "receiverCompanyId": receiver["externalId"],
+        "senderCompanyId": company["externalId"],
     }
 
     res_create = client.post("/api/company-transaction", json=tx_payload)
     assert res_create.status_code == 201
     tx = res_create.get_json()
-    tx_guid = tx["external_id"]
+    tx_guid = tx["externalId"]
 
     res_get = client.get(f"/api/company-transaction/{tx_guid}")
     assert res_get.status_code == 201
     fetched = res_get.get_json()
 
-    assert fetched["external_id"] == tx_guid
+    assert fetched["externalId"] == tx_guid
     assert fetched["amount"] == tx_payload["amount"]
 
 
