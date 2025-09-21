@@ -6,7 +6,7 @@ class CheckTransactionViewModel(BaseModel):
   amount: int = Field(..., alias="amount")
   created_at: datetime = Field(..., alias="createdAt")
   receiver_company_id: str = Field(..., alias="receiverCompanyId")
-  from_authority: str = Field(..., alias="fromAuthority")
+  sender_authority: str = Field(..., alias="senderAuthority")
 
   class Config:
     validate_by_name = True     # lets you create objects using snake_case

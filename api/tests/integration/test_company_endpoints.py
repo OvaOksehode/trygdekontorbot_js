@@ -1,6 +1,7 @@
 import random
 import pytest
 from faker import Faker
+from config import settings
 import uuid
 
 fake = Faker()
@@ -19,6 +20,7 @@ def test_create_company(client, company_payload):
     data = res.get_json()
     assert data["name"] == company_payload["name"]
     assert "externalId" in data
+    assert data["balance"] == settings.starter_cash
 
 def test_create_company_missing_fields(client):
     """Creating with missing required fields should fail."""

@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from models.CompanyViewModel import CompanyViewModel
 from models.CompanyTransactionViewModel import CompanyTransactionViewModel
 from services.mappers import check_transaction_to_viewmodel, company_to_viewmodel, company_transaction_to_viewmodel
-from services.LedgerEntryService import create_check_transaction, create_company_transaction, get_company_transaction_by_external_guid
+from services.LedgerEntryService import create_check_transaction, create_company_transaction, get_check_transaction_by_external_guid, get_company_transaction_by_external_guid
 from services.CompanyService import create_company, delete_company, get_company_by_external_guid, update_company
 
 from models.Exceptions import CompanyAlreadyExistsError, CompanyNotEnoughFundsError, CompanyNotFoundError, InvalidTransactionAmountError, InvalidUpdateError, LedgerEntryNotFoundError, OwnerAlreadyHasCompanyError
@@ -145,7 +145,7 @@ def request_get_company_transaction(external_guid: str):
 
     return Response(
             company_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(by_alias=True),  # indent optional for readability
-            status=201,
+            status=200,
             mimetype="application/json"
         )
 
@@ -159,7 +159,7 @@ def request_create_check_transaction():
         dto_data = CreateCheckTransactionDTO(**request.json)
         newLedgerEntry, newTransaction = create_check_transaction(dto_data)
         return Response(
-            check_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(),  # indent optional for readability
+            check_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(by_alias=True),  # indent optional for readability
             status=201,
             mimetype="application/json"
         )
@@ -171,6 +171,26 @@ def request_create_check_transaction():
         return jsonify({"error": str(error)}), 400
     except CompanyNotEnoughFundsError as error:
         return jsonify({"error": str(error)}), 400
+
+# GET localhost/api/check-transaction/<external_guid>
+# ↩ Get check transaction
+@api.route("/check-transaction/<external_guid>", methods=["GET"])
+def request_get_check_transaction(external_guid: str):
+    try:
+        # validate UUID format
+        external_guid = str(uuid.UUID(external_guid))
+    except ValueError:
+        return jsonify({"error": "Invalid external_guid"}), 400
+    try:
+        newLedgerEntry, newTransaction = get_check_transaction_by_external_guid(external_guid)
+    except LedgerEntryNotFoundError as error:
+        return jsonify({"error": str(error)}), 404
+
+    return Response(
+            check_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(by_alias=True),  # indent optional for readability
+            status=200,
+            mimetype="application/json"
+        )
 
 @api.errorhandler(500)
 def handle_internal_error(e):

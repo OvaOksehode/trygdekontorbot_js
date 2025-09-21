@@ -47,7 +47,7 @@ def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> Tuple[Ledge
     receiver = CompanyRepository.get_by_external_id(dto_data.receiver_company_id)
 
     if receiver is None:
-        raise CompanyNotFoundError(f"Company with external_guid {dto_data.from_company_id} not found")
+        raise CompanyNotFoundError(f"Company with external_guid {dto_data.receiver_company_id} not found")
 
     # Check that sender has enough balance
     newLedgerEntry = LedgerEntry(
@@ -72,6 +72,12 @@ def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> Tuple[Ledge
 
 def get_company_transaction_by_external_guid(external_guid: str):
     transaction = LedgerEntryRepository.get_company_transaction_by_external_id(external_guid);
+    if transaction is None:
+        raise LedgerEntryNotFoundError(f"Company with external_guid {external_guid} not found")
+    return transaction
+
+def get_check_transaction_by_external_guid(external_guid: str):
+    transaction = LedgerEntryRepository.get_check_transaction_by_external_id(external_guid);
     if transaction is None:
         raise LedgerEntryNotFoundError(f"Company with external_guid {external_guid} not found")
     return transaction

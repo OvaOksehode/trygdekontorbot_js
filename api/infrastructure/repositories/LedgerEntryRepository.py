@@ -31,6 +31,24 @@ class LedgerEntryRepository:
         return result  # will be (LedgerEntry, CompanyTransactionDetails) or None
 
     @staticmethod
+    def get_check_transaction_by_external_id(external_id: str) -> Optional[Tuple[LedgerEntry, CompanyTransactionDetails]]:
+        """
+        Fetch a LedgerEntry with its CompanyTransactionDetails by external_id.
+        Returns None if not found or if no company transaction details exist.
+        """
+        result = (
+            db.session.query(LedgerEntry, CheckTransactionDetails)
+            .join(CheckTransactionDetails, CheckTransactionDetails.ledger_entry_id == LedgerEntry.ledger_entry_id)
+            .filter(LedgerEntry.external_id == external_id)
+            .first()
+        )
+
+        if result is None:
+            raise LedgerEntryNotFoundError(f"Check transaction with external_id {external_id} not found")
+
+        return result  # will be (LedgerEntry, CompanyTransactionDetails) or None
+
+    @staticmethod
     def get_all() -> list[LedgerEntry]:
         """
         Returns all ledger entries, joined with their concrete subclass rows
