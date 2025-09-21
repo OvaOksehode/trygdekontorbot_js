@@ -1,6 +1,8 @@
 # repositories/LedgerEntryRepository.py
 from typing import Optional, Tuple
+from models.Exceptions import LedgerEntryNotFoundError
 from infrastructure.db.db import db
+from models.CheckTransactionDetails import CheckTransactionDetails
 from models.LedgerEntry import LedgerEntry
 from models.CompanyTransactionDetails import CompanyTransactionDetails
 
@@ -11,22 +13,40 @@ class LedgerEntryRepository:
         return db.session.get(LedgerEntry, entry_id)
 
     @staticmethod
-    def get_by_external_id(external_id: str) -> Optional[Tuple[LedgerEntry, CompanyTransactionDetails]]:
+    def get_company_transaction_by_external_id(external_id: str) -> Optional[Tuple[LedgerEntry, CompanyTransactionDetails]]:
         """
-        Fetch a LedgerEntry and its CompanyTransactionDetails by external_id.
-        Returns None if not found.
+        Fetch a LedgerEntry with its CompanyTransactionDetails by external_id.
+        Returns None if not found or if no company transaction details exist.
         """
-        entry: LedgerEntry | None = (
-            db.session.query(LedgerEntry)
-            .filter_by(external_id=external_id)
+        result = (
+            db.session.query(LedgerEntry, CompanyTransactionDetails)
+            .join(CompanyTransactionDetails, CompanyTransactionDetails.ledger_entry_id == LedgerEntry.ledger_entry_id)
+            .filter(LedgerEntry.external_id == external_id)
             .first()
         )
 
-        if not entry:
-            return None
+        if result is None:
+            raise LedgerEntryNotFoundError(f"Company transaction with external_id {external_id} not found")
 
-        # assuming relationship is defined as LedgerEntry.company_transaction_details
-        return entry, entry.company_transaction_details
+        return result  # will be (LedgerEntry, CompanyTransactionDetails) or None
+
+    @staticmethod
+    def get_check_transaction_by_external_id(external_id: str) -> Optional[Tuple[LedgerEntry, CompanyTransactionDetails]]:
+        """
+        Fetch a LedgerEntry with its CompanyTransactionDetails by external_id.
+        Returns None if not found or if no company transaction details exist.
+        """
+        result = (
+            db.session.query(LedgerEntry, CheckTransactionDetails)
+            .join(CheckTransactionDetails, CheckTransactionDetails.ledger_entry_id == LedgerEntry.ledger_entry_id)
+            .filter(LedgerEntry.external_id == external_id)
+            .first()
+        )
+
+        if result is None:
+            raise LedgerEntryNotFoundError(f"Check transaction with external_id {external_id} not found")
+
+        return result  # will be (LedgerEntry, CompanyTransactionDetails) or None
 
     @staticmethod
     def get_all() -> list[LedgerEntry]:
@@ -39,6 +59,26 @@ class LedgerEntryRepository:
 
     @staticmethod
     def createCompanyTransaction(ledger_entry: LedgerEntry, tx_details: CompanyTransactionDetails) -> Tuple[LedgerEntry, CompanyTransactionDetails]:
+        """
+        Persists a LedgerEntry and its corresponding CompanyTransactionDetails
+        in a single atomic transaction, setting up the 1:1 relationship.
+        """
+
+        # Link 1:1 relationship
+        tx_details.ledger_entry = ledger_entry
+
+        # Persist both objects
+        db.session.add(ledger_entry)
+        db.session.add(tx_details)
+
+        # Commit atomically
+        db.session.commit()
+
+        # Now tx_details.id == ledger_entry.id because of FK
+        return ledger_entry, tx_details
+
+    @staticmethod
+    def createCheckTransaction(ledger_entry: LedgerEntry, tx_details: CheckTransactionDetails) -> Tuple[LedgerEntry, CheckTransactionDetails]:
         """
         Persists a LedgerEntry and its corresponding CompanyTransactionDetails
         in a single atomic transaction, setting up the 1:1 relationship.

@@ -14,17 +14,16 @@ class CompanyRepository:
         return db.session.query(Company).filter_by(name=name).first()
     @staticmethod
     def get_by_owner_id(owner_id: int):
-        return db.session.query(Company).filter_by(owner=owner_id).first()
+        return db.session.query(Company).filter_by(owner_id=owner_id).first()
     @staticmethod
     def get_all():
         return db.session.query(Company).all()
 
     @staticmethod
-    def create(company_data):
-        company = Company(**company_data)
-        db.session.add(company)
+    def create(company_data: Company) -> Company:
+        db.session.add(company_data)
         db.session.commit()
-        return company
+        return company_data
 
     @staticmethod
     def update(company: Company):

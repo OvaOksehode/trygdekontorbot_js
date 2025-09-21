@@ -1,6 +1,7 @@
 import random
 import pytest
 from faker import Faker
+from config import settings
 import uuid
 
 fake = Faker()
@@ -10,7 +11,7 @@ def company_payload():
     """Generate random company creation payload."""
     return {
         "name": fake.company(),
-        "owner": random.randint(1, 1000)
+        "ownerId": random.randint(1, 1000)
     }
 
 def test_create_company(client, company_payload):
@@ -18,7 +19,8 @@ def test_create_company(client, company_payload):
     assert res.status_code == 201
     data = res.get_json()
     assert data["name"] == company_payload["name"]
-    assert "external_id" in data
+    assert "externalId" in data
+    assert data["balance"] == settings.starter_cash
 
 def test_create_company_missing_fields(client):
     """Creating with missing required fields should fail."""
@@ -40,7 +42,7 @@ def test_create_company_duplicate_name(client, company_payload):
     # Use the same name but a different owner
     duplicate_payload = {
         "name": company_payload["name"],
-        "owner": company_payload["owner"] + 1  # ensure different owner
+        "ownerId": company_payload["ownerId"] + 1  # ensure different owner
     }
 
     # Try creating another with the same name
@@ -53,14 +55,14 @@ def test_get_company(client, company_payload):
     # Create first
     res_create = client.post("api/company", json=company_payload)
     company = res_create.get_json()
-    guid = company["external_id"]
+    guid = company["externalId"]
 
     # GET
     res = client.get(f"api/company/{guid}")
     assert res.status_code == 200
     data = res.get_json()
     assert data["name"] == company_payload["name"]
-    assert data["external_id"] == guid
+    assert data["externalId"] == guid
 
 @pytest.mark.parametrize("method", ["get", "delete"])
 @pytest.mark.parametrize("guid, expected_status", [
@@ -78,7 +80,7 @@ def test_update_company(client, company_payload):
     # Create first
     res_create = client.post("api/company", json=company_payload)
     company = res_create.get_json()
-    guid = company["external_id"]
+    guid = company["externalId"]
 
     # PATCH
     update_data = {"name": fake.company()}
@@ -86,12 +88,12 @@ def test_update_company(client, company_payload):
     assert res.status_code == 200
     data = res.get_json()
     assert data["name"] == update_data["name"]
-    assert data["external_id"] == guid
+    assert data["externalId"] == guid
 
 def test_update_company_invalid_field(client, company_payload):
     """Trying to update a forbidden field like balance should fail."""
     res_create = client.post("/api/company", json=company_payload)
-    guid = res_create.get_json()["external_id"]
+    guid = res_create.get_json()["externalId"]
 
     res = client.patch(f"/api/company/{guid}", json={"balance": 999999})
     assert res.status_code == 400
@@ -111,7 +113,7 @@ def test_delete_company(client, company_payload):
     # Create first
     res_create = client.post("api/company", json=company_payload)
     company = res_create.get_json()
-    guid = company["external_id"]
+    guid = company["externalId"]
 
     # DELETE
     res = client.delete(f"api/company/{guid}")
@@ -131,14 +133,14 @@ def test_company_lifecycle(client):
     """End-to-end flow: create → update → get → delete"""
     payload = {
         "name": fake.company(),
-        "owner": random.randint(1, 1000)
+        "ownerId": random.randint(1, 1000)
     }
 
     # CREATE
     res_create = client.post("api/company", json=payload)
     assert res_create.status_code == 201
     company = res_create.get_json()
-    guid = company["external_id"]
+    guid = company["externalId"]
 
     # UPDATE
     update_data = {"name": fake.company()}

@@ -2,10 +2,9 @@ import datetime
 import logging
 import os
 from logging.handlers import RotatingFileHandler
-from config import Settings
+from config import settings
 
 def setup_logging():
-    settings = Settings()
     env = settings.environment
 
     log_dir = os.path.join("logs", "testing" if env == "testing" else "dev")
