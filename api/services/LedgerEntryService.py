@@ -52,7 +52,7 @@ def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> Tuple[Ledge
     # Check that sender has enough balance
     newLedgerEntry = LedgerEntry(
         amount = dto_data.amount,
-        receiver_company_id = dto_data.receiver_company_id
+        receiver_company_id = receiver.company_id
     )
     newCheckTransactionDetails = CheckTransactionDetails(
         sender_authority = dto_data.sender_authority

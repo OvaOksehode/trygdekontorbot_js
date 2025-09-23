@@ -30,6 +30,6 @@ def check_transaction_to_viewmodel(ledgerEntry: LedgerEntry, checkTransaction: C
         external_id=ledgerEntry.external_id,
         amount=ledgerEntry.amount,
         created_at=ledgerEntry.created_at,
-        receiver_company_id=ledgerEntry.receiver_company_id,
+        receiver_company_id=ledgerEntry.receiver.external_id,
         sender_authority=checkTransaction.sender_authority
     )

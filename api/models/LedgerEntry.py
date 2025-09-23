@@ -28,7 +28,7 @@ class LedgerEntry(db.Model):
     )
     receiver_company_id = db.Column(
         "ReceiverCompanyID",
-        db.String(36),
+        db.Integer,
         db.ForeignKey(
             "Company.CompanyID",
             name="fk_LedgerEntry_ReceiverCompanyID"
@@ -38,6 +38,19 @@ class LedgerEntry(db.Model):
 
     receiver = db.relationship(
         'Company',
-        foreign_keys=[receiver_company_id],
-        backref='ledger_entries'
+        back_populates="ledger_entries"
+    )
+    
+    company_transaction_details = db.relationship(
+        "CompanyTransactionDetails",
+        back_populates="ledger_entry",
+        cascade="all, delete-orphan",
+        uselist=False
+    )
+
+    check_transaction_details = db.relationship(
+        "CheckTransactionDetails",
+        back_populates="ledger_entry",
+        cascade="all, delete-orphan",
+        uselist=False
     )

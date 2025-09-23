@@ -52,3 +52,9 @@ class Company(db.Model):
         db.Integer,
         nullable=True
     )
+    
+    ledger_entries = db.relationship(
+        "LedgerEntry",
+        back_populates="receiver",
+        cascade="all, delete-orphan"
+    )

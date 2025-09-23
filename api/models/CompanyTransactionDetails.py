@@ -11,7 +11,8 @@ class CompanyTransactionDetails(db.Model):
         db.Integer,
         db.ForeignKey(
             "LedgerEntry.LedgerEntryID",
-            name="fk_CompanyTransactionDetails_LedgerEntryID"
+            name="fk_CompanyTransactionDetails_LedgerEntryID",
+            ondelete="CASCADE"
         ),
         primary_key=True
     )
