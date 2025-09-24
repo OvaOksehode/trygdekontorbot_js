@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     starter_cash: int = Field("100", json_schema_extra={"env": "STARTER_CASH"})
     default_check_authority: str = Field("Trygdekontoret Ændal", json_schema_extra={"env": "DEFAULT_CHECK_AUTHORITY"})
+    default_trygd_authority: str = Field("Trygdekontoret Ændal", json_schema_extra={"env": "DEFAULT_CHECK_AUTHORITY"})
 
     model_config = ConfigDict(env_file=".env", env_file_encoding="utf-8")
 

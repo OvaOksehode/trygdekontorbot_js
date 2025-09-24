@@ -1,12 +1,14 @@
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Tuple
 from models.CheckTransactionDetails import CheckTransactionDetails
 from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
-from models.Exceptions import CompanyNotEnoughFundsError, CompanyNotFoundError, LedgerEntryNotFoundError
+from models.Exceptions import ClaimCooldownActiveError, CompanyNotEnoughFundsError, CompanyNotFoundError, LedgerEntryNotFoundError
 from infrastructure.repositories.CompanyRepository import CompanyRepository
 from infrastructure.repositories.LedgerEntryRepository import LedgerEntryRepository
 from models.CreateCompanyTransactionDTO import CreateCompanyTransactionDTO
 from models.CompanyTransactionDetails import CompanyTransactionDetails
 from models.LedgerEntry import LedgerEntry
+from config import settings
 
 def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> Tuple[LedgerEntry, CompanyTransactionDetails]:
     # Check that sender and receiver exists
@@ -81,3 +83,43 @@ def get_check_transaction_by_external_guid(external_guid: str):
     if transaction is None:
         raise LedgerEntryNotFoundError(f"Company with external_guid {external_guid} not found")
     return transaction
+
+def can_claim(company, cooldown_hours: int = 1) -> bool:
+    if not company.last_trygd_claim:
+        # Never claimed before → allowed
+        return True
+
+    now = datetime.now(timezone.utc)
+    cooldown_period = timedelta(hours=cooldown_hours)
+
+    return (now - company.last_trygd_claim) >= cooldown_period
+
+def time_until_next_claim(company, cooldown_hours: int = 1) -> timedelta:
+    if not company.last_trygd_claim:
+        return timedelta(0)
+
+    now = datetime.now(timezone.utc)
+    cooldown_period = timedelta(hours=cooldown_hours)
+    next_allowed = company.last_trygd_claim + cooldown_period
+
+    return max(next_allowed - now, timedelta(0))
+
+def company_claim_cash(external_guid: str):
+    company = CompanyRepository.get_by_external_id(external_guid);
+    if company is None:
+        raise CompanyNotFoundError(f"Company with external_guid {external_guid} not found")
+    
+    if not can_claim(company):
+        raise ClaimCooldownActiveError(f"Claim is on cooldown for {company.name}. Please wait {time_until_next_claim(company)} before trying again.")
+    persisted_ledger, persisted_tx = create_check_transaction(
+        CreateCheckTransactionDTO(
+            amount = company.trygd_amount,
+            receiver_company_id = company.external_id,
+            sender_authority = settings.default_trygd_authority
+        )
+    )
+    company.balance += persisted_ledger.amount;
+    company.last_trygd_claim = datetime.now(UTC)
+    CompanyRepository.update(company);
+
+    return persisted_ledger, persisted_tx
