@@ -86,23 +86,27 @@ def get_check_transaction_by_external_guid(external_guid: str):
 
 def can_claim(company, cooldown_hours: int = 1) -> bool:
     if not company.last_trygd_claim:
-        # Never claimed before → allowed
         return True
 
+    # treat the naive timestamp as UTC
+    last_claim_utc = company.last_trygd_claim.replace(tzinfo=timezone.utc)
     now = datetime.now(timezone.utc)
     cooldown_period = timedelta(hours=cooldown_hours)
 
-    return (now - company.last_trygd_claim) >= cooldown_period
+    return (now - last_claim_utc) >= cooldown_period
 
-def time_until_next_claim(company, cooldown_hours: int = 1) -> timedelta:
+def minutes_until_next_claim(company, cooldown_hours: int = 1) -> int:
     if not company.last_trygd_claim:
-        return timedelta(0)
+        return 0
 
+    # Treat the naive timestamp as UTC
+    last_claim_utc = company.last_trygd_claim.replace(tzinfo=timezone.utc)
     now = datetime.now(timezone.utc)
     cooldown_period = timedelta(hours=cooldown_hours)
-    next_allowed = company.last_trygd_claim + cooldown_period
+    next_allowed = last_claim_utc + cooldown_period
 
-    return max(next_allowed - now, timedelta(0))
+    remaining = max(next_allowed - now, timedelta(0))
+    return int(remaining.total_seconds() // 60)
 
 def company_claim_cash(external_guid: str):
     company = CompanyRepository.get_by_external_id(external_guid);
@@ -110,7 +114,7 @@ def company_claim_cash(external_guid: str):
         raise CompanyNotFoundError(f"Company with external_guid {external_guid} not found")
     
     if not can_claim(company):
-        raise ClaimCooldownActiveError(f"Claim is on cooldown for {company.name}. Please wait {time_until_next_claim(company)} before trying again.")
+        raise ClaimCooldownActiveError(f"Claim is on cooldown for {company.name}. Please wait {minutes_until_next_claim(company)} minute(s) before trying again.")
     persisted_ledger, persisted_tx = create_check_transaction(
         CreateCheckTransactionDTO(
             amount = company.trygd_amount,

@@ -11,8 +11,7 @@ class CheckTransactionDetails(db.Model):
         db.Integer,
         db.ForeignKey(
             "LedgerEntry.LedgerEntryID",
-            name="fk_CheckTransactionDetails_LedgerEntryID",
-            ondelete="CASCADE"
+            name="fk_CheckTransactionDetails_LedgerEntryID"
         ),
         primary_key=True
     )
@@ -27,6 +26,6 @@ class CheckTransactionDetails(db.Model):
     # Relationship back to LedgerEntry (1:1)
     ledger_entry = db.relationship(
         "LedgerEntry",
-        backref=db.backref('check_transaction_details', uselist=False),
+        back_populates='check_transaction_details',
         uselist=False
     )

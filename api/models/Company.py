@@ -50,11 +50,17 @@ class Company(db.Model):
     trygd_amount = db.Column(
         "TrygdAmount",
         db.Integer,
+        default=10,
         nullable=True
     )
     
     ledger_entries = db.relationship(
         "LedgerEntry",
         back_populates="receiver",
-        cascade="all, delete-orphan"
     )
+    
+    outgoing_company_transactions = db.relationship(
+        "CompanyTransactionDetails",
+        back_populates="sender_company",
+    )
+    
