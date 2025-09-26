@@ -40,7 +40,11 @@ class Company(db.Model):
         db.DateTime,
         default=lambda: datetime.now(UTC)
     )
-
+    deleted_at = db.Column(
+        "DeletedAt",
+        db.DateTime,
+        nullable=True   # Null signifies active company
+    )
     # Move these out in the future
     last_trygd_claim = db.Column(
         "LastTrygdClaim",
@@ -56,11 +60,11 @@ class Company(db.Model):
     
     ledger_entries = db.relationship(
         "LedgerEntry",
-        back_populates="receiver",
+        back_populates="receiver"
     )
-    
+
     outgoing_company_transactions = db.relationship(
         "CompanyTransactionDetails",
         back_populates="sender_company",
+        foreign_keys="CompanyTransactionDetails.sender_company_id"
     )
-    

@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from services.LedgerEntryService import create_check_transaction
 from models.Company import Company
 from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
@@ -9,10 +11,13 @@ from config import settings
 
 def create_company(company_data: CreateCompanyDTO):
     # 1️⃣ Validate uniqueness
-    if CompanyRepository.get_by_owner_id(company_data.owner_id) is not None:
-        raise OwnerAlreadyHasCompanyError(f"Owner with id {company_data.owner_id} already has a company")
-    if CompanyRepository.get_by_name(company_data.name) is not None:
-        raise CompanyAlreadyExistsError(f"Company with name {company_data.name} already exists")
+    company_by_owner = CompanyRepository.get_by_owner_id(company_data.owner_id)
+    if company_by_owner and company_by_owner.deleted_at is None:
+        raise OwnerAlreadyHasCompanyError(f"Owner {company_by_owner.owner_id} already has a company")
+
+    company_by_name = CompanyRepository.get_by_name(company_data.name)
+    if company_by_name:
+        raise CompanyAlreadyExistsError(f"Company {company_data.name} already exists or has existed in the past")
 
     # 2️⃣ Convert DTO -> ORM model
     company_model = Company(
@@ -53,4 +58,8 @@ def delete_company(external_guid):
     company = CompanyRepository.get_by_external_id(external_guid);
     if company is None:
         raise CompanyNotFoundError(f"Company with external_guid {external_guid} not found")
-    CompanyRepository.delete(company.company_id)
+    company.deleted_at = datetime.now(UTC)
+    company.name = settings.default_deleted_company_name
+    company.owner_id = None
+    company.balance = 0
+    CompanyRepository.update(company)

@@ -30,7 +30,7 @@ class CompanyTransactionDetails(db.Model):
     # Relationship back to LedgerEntry (1:1)
     ledger_entry = db.relationship(
         "LedgerEntry",
-        back_populates='company_transaction_details',
+        back_populates="company_transaction_details",
         uselist=False
     )
 

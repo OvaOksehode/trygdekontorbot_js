@@ -7,6 +7,7 @@ class CompanyViewModel(BaseModel):
     owner_id: int = Field(..., alias="ownerId")
     balance: int = Field(..., alias="balance")
     created_at: datetime = Field(..., alias="createdAt")
+    deleted_at: datetime = Field(..., alias="deletedAt")
     last_trygd_claim: datetime | None = Field(None, alias="lastTrygdClaim")
 
     class Config:
