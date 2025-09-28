@@ -6,7 +6,7 @@ services:
       - internal
       - public        # attach to both internal + public networks
     restart: no
-    command: ["pytest", "-v"]
+    command: ["pytest", "-v"]  
 
 networks:
   public:

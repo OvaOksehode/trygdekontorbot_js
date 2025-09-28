@@ -59,7 +59,7 @@ def delete_company(external_guid):
     if company is None:
         raise CompanyNotFoundError(f"Company with external_guid {external_guid} not found")
     company.deleted_at = datetime.now(UTC)
-    company.name = settings.default_deleted_company_name
-    company.owner_id = None
-    company.balance = 0
+    # company.name = settings.default_deleted_company_name
+    # company.owner_id = None
+    # company.balance = 0
     CompanyRepository.update(company)
