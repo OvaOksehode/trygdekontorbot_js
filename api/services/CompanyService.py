@@ -57,5 +57,7 @@ def update_company(external_guid, updateDto):
 def delete_company(external_guid):
     company = get_company_by_external_guid(external_guid);
     company.deleted_at = datetime.now(UTC)
-
+    # company.name = settings.default_deleted_company_name
+    # company.owner_id = None
+    # company.balance = 0
     CompanyRepository.update(company)
