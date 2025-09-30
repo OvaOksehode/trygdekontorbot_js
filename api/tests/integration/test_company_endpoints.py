@@ -21,6 +21,9 @@ def test_create_company(client, company_payload):
     assert data["name"] == company_payload["name"]
     assert "externalId" in data
     assert data["balance"] == settings.starter_cash
+    
+    # Check that the starter cash transaction exists
+    
 
 def test_create_company_missing_fields(client):
     """Creating with missing required fields should fail."""
