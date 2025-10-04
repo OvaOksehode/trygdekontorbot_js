@@ -122,7 +122,7 @@ def company_claim_cash(external_guid: str):
             sender_authority = settings.default_trygd_authority
         )
     )
-    company.balance += persisted_ledger.amount;
+    # company.balance += persisted_ledger.amount;
     company.last_trygd_claim = datetime.now(UTC)
     CompanyRepository.update(company);
 
