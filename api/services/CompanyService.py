@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from services.LedgerEntryService import create_check_transaction
 from models.Company import Company
 from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
@@ -7,12 +9,15 @@ from infrastructure.repositories.CompanyRepository import CompanyRepository
 
 from config import settings
 
-def create_company(company_data: CreateCompanyDTO):
+def create_company(company_data: CreateCompanyDTO)-> Company:
     # 1️⃣ Validate uniqueness
-    if CompanyRepository.get_by_owner_id(company_data.owner_id) is not None:
-        raise OwnerAlreadyHasCompanyError(f"Owner with id {company_data.owner_id} already has a company")
-    if CompanyRepository.get_by_name(company_data.name) is not None:
-        raise CompanyAlreadyExistsError(f"Company with name {company_data.name} already exists")
+    company_by_owner = CompanyRepository.get_by_owner_id(company_data.owner_id)
+    if company_by_owner and company_by_owner.deleted_at is None:
+        raise OwnerAlreadyHasCompanyError(f"Owner {company_by_owner.owner_id} already has a company")
+
+    company_by_name = CompanyRepository.get_by_name(company_data.name)
+    if company_by_name:
+        raise CompanyAlreadyExistsError(f"Company {company_data.name} already exists or has existed in the past")
 
     # 2️⃣ Convert DTO -> ORM model
     company_model = Company(
@@ -36,7 +41,7 @@ def create_company(company_data: CreateCompanyDTO):
 
 def get_company_by_external_guid(external_guid: str):
     company = CompanyRepository.get_by_external_id(external_guid);
-    if company is None:
+    if company is None or company.deleted_at is not None:
         raise CompanyNotFoundError(f"Company with external_guid {external_guid} not found")
     return company
 
@@ -50,7 +55,7 @@ def update_company(external_guid, updateDto):
     return CompanyRepository.update(company)
 
 def delete_company(external_guid):
-    company = CompanyRepository.get_by_external_id(external_guid);
-    if company is None:
-        raise CompanyNotFoundError(f"Company with external_guid {external_guid} not found")
-    CompanyRepository.delete(company.company_id)
+    company = get_company_by_external_guid(external_guid);
+    company.deleted_at = datetime.now(UTC)
+
+    CompanyRepository.update(company)

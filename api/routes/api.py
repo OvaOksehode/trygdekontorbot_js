@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from models.CompanyViewModel import CompanyViewModel
 from models.CompanyTransactionViewModel import CompanyTransactionViewModel
 from services.mappers import check_transaction_to_viewmodel, company_to_viewmodel, company_transaction_to_viewmodel
-from services.LedgerEntryService import create_check_transaction, create_company_transaction, get_check_transaction_by_external_guid, get_company_transaction_by_external_guid
+from services.LedgerEntryService import company_claim_cash, create_check_transaction, create_company_transaction, get_check_transaction_by_external_guid, get_company_transaction_by_external_guid
 from services.CompanyService import create_company, delete_company, get_company_by_external_guid, update_company
 
 from models.Exceptions import CompanyAlreadyExistsError, CompanyNotEnoughFundsError, CompanyNotFoundError, InvalidTransactionAmountError, InvalidUpdateError, LedgerEntryNotFoundError, OwnerAlreadyHasCompanyError
@@ -191,6 +191,25 @@ def request_get_check_transaction(external_guid: str):
             status=200,
             mimetype="application/json"
         )
+    
+# POST localhost/api/company/<external_guid>/claim
+# ✅ Claim cash with a given company
+@api.route("/company/<external_guid>/claim", methods=["POST"])
+def request_claim_cash(external_guid: str):
+    try:
+        # validate UUID format
+        external_guid = str(uuid.UUID(external_guid))
+    except ValueError:
+        return jsonify({"error": "Invalid external_guid"}), 400
+    try:
+        newLedgerEntry, newTransaction = company_claim_cash(external_guid)
+        return Response(
+            check_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(by_alias=True),  # indent optional for readability
+            status=201,
+            mimetype="application/json"
+        )
+    except LedgerEntryNotFoundError as error:
+        return jsonify({"error": str(error)}), 404
 
 @api.errorhandler(500)
 def handle_internal_error(e):

@@ -25,3 +25,7 @@ class OwnerAlreadyHasCompanyError(Exception):
 class InvalidTransactionAmountError(Exception):
     """Raised when trying to create a transaction with an invalid amount."""
     pass
+
+class ClaimCooldownActiveError(Exception):
+    """Raised when trying to claim cash while cooldown is active."""
+    pass

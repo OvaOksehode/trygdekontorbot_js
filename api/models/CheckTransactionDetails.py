@@ -26,6 +26,6 @@ class CheckTransactionDetails(db.Model):
     # Relationship back to LedgerEntry (1:1)
     ledger_entry = db.relationship(
         "LedgerEntry",
-        backref=db.backref('check_transaction_details', uselist=False),
+        back_populates='check_transaction_details',
         uselist=False
     )

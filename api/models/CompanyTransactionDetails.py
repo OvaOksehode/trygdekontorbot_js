@@ -30,14 +30,14 @@ class CompanyTransactionDetails(db.Model):
     # Relationship back to LedgerEntry (1:1)
     ledger_entry = db.relationship(
         "LedgerEntry",
-        backref=db.backref('company_transaction_details', uselist=False),
+        back_populates="company_transaction_details",
         uselist=False
     )
 
     sender_company = db.relationship(
         "Company",
         foreign_keys=[sender_company_id],
-        backref="outgoing_transactions"  # all outgoing transactions initiated by this company
+        back_populates="outgoing_company_transactions"  # all outgoing transactions initiated by this company
     )
     
     class Config:
