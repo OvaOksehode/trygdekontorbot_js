@@ -19,22 +19,13 @@ api = Blueprint("api", __name__)
 # ✅ Create company
 @api.route("/company", methods=["POST"])
 def request_create_company():
-    try:
-        data = CreateCompanyDTO(**request.json)
-        newCompany = create_company(data)
-        return Response(
-            CompanyViewModel.model_validate(newCompany).model_dump_json(by_alias=True),  # indent optional for readability
-            status=201,
-            mimetype="application/json"
-        )
-    except ValidationError as error:
-        return jsonify(error.errors()), 400
-    except CompanyAlreadyExistsError as error:
-        return jsonify({"error": str(error)}), 409
-    except OwnerAlreadyHasCompanyError as error:
-        return jsonify({"error": str(error)}), 409
-        
-    # catch all other 4xx errors
+    data = CreateCompanyDTO(**request.json)
+    newCompany = create_company(data)
+    return Response(
+        CompanyViewModel.model_validate(newCompany).model_dump_json(by_alias=True),  # indent optional for readability
+        status=201,
+        mimetype="application/json"
+    )
 
 # GET localhost/api/company/<external_guid>
 # ↩ Get company
@@ -210,8 +201,3 @@ def request_claim_cash(external_guid: str):
         )
     except LedgerEntryNotFoundError as error:
         return jsonify({"error": str(error)}), 404
-
-@api.errorhandler(500)
-def handle_internal_error(e):
-    current_app.logger.exception("Unexpected error in API")
-    return jsonify({"error": "Internal server error"}), 500

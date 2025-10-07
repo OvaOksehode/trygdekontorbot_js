@@ -6,6 +6,7 @@ from infrastructure.db.init_db import init_db
 from config import settings
 from infrastructure.logging.logging_config import setup_logging
 from routes.api import api
+import routes.errorHandlers
 
 def create_app():
     setup_logging()
