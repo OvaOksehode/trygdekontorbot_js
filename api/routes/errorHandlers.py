@@ -1,0 +1,36 @@
+from pydantic import ValidationError
+from routes.api import api
+from models.Exceptions import CompanyAlreadyExistsError, ErrorResponse, OwnerAlreadyHasCompanyError
+
+@api.errorhandler(ValidationError)
+def handle_validation_error(e):
+    return ErrorResponse(
+        error="validationError",
+        description="Missing or invalid fields",
+        status_code=400,
+        payload={"details": e.errors()},
+    ).to_flask_response()
+    
+@api.errorhandler(CompanyAlreadyExistsError)
+def handle_validation_error(e):
+    return ErrorResponse(
+        error="companyAlreadyExistsError",
+        description=str(e),
+        status_code=409,
+    ).to_flask_response()
+    
+@api.errorhandler(OwnerAlreadyHasCompanyError)
+def handle_validation_error(e):
+    return ErrorResponse(
+        error="ownerAlreadyHasCompanyError",
+        description=str(e),
+        status_code=409,
+    ).to_flask_response()
+    
+@api.errorhandler(500)
+def handle_internal_error(e):
+    return ErrorResponse(
+        error="internalServerError",
+        description=str(e),
+        status_code=500,
+    ).to_flask_response()

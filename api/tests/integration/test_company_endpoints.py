@@ -30,7 +30,8 @@ def test_create_company_missing_fields(client):
     res = client.post("/api/company", json={"owner": 123})
     assert res.status_code == 400
 
-    errors = res.get_json()
+    fullRes = res.get_json()
+    errors = fullRes["details"]
     assert isinstance(errors, list)
     # Assert that at least one error is about "name"
     assert any("name" in err["loc"] for err in errors)
@@ -51,7 +52,7 @@ def test_create_company_duplicate_name(client, company_payload):
     # Try creating another with the same name
     res2 = client.post("/api/company", json=duplicate_payload)
     assert res2.status_code == 409
-    assert "already exists" in res2.get_json()["error"].lower()
+    assert "already exists" in res2.get_json()["errorDescription"].lower()
 
 
 def test_get_company(client, company_payload):
