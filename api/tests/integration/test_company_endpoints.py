@@ -68,6 +68,50 @@ def test_get_company(client, company_payload):
     assert data["name"] == company_payload["name"]
     assert data["externalId"] == guid
 
+def test_query_companies_with_search_param(client, company_payload):
+    import uuid
+
+    # Generate a random base name to avoid collisions
+    base_name = f"AwesomeCo-{uuid.uuid4().hex[:8]}"
+
+    # Create 5 predictable companies
+    for i in range(5):
+        payload = {
+            "ownerId": company_payload["ownerId"] + i,
+            "name": f"{base_name} {i}"
+        }
+        res = client.post("/api/company", json=payload)
+        assert res.status_code == 201
+
+    # Create 3 random companies
+    for i in range(3):
+        payload = {
+            "ownerId": company_payload["ownerId"] + 100 + i,
+            "name": f"{uuid.uuid4().hex[:10]}"
+        }
+        res = client.post("/api/company", json=payload)
+        assert res.status_code == 201
+
+    # 1️⃣ Search with %
+    res_search = client.get(f"/api/company?s={base_name}%")
+    assert res_search.status_code == 200
+    search_results = res_search.get_json()
+    assert len(search_results) == 5
+    result_names = [c["name"] for c in search_results]
+    for i in range(5):
+        assert f"{base_name} {i}" in result_names
+
+    # 2️⃣ Single-character wildcard: match only single-digit numbers
+    # We need to account for space + number: "AwesomeCo-XXXX ?" matches "AwesomeCo-XXXX 0..4"
+    search_param = f"{base_name} ?"
+    res_search = client.get(f"/api/company?s={search_param}")
+    assert res_search.status_code == 200
+    search_results = res_search.get_json()
+    expected_names = [f"{base_name} {i}" for i in range(5) if len(str(i)) == 1]
+    result_names = [c["name"] for c in search_results]
+    for name in expected_names:
+        assert name in result_names
+
 @pytest.mark.parametrize("method", ["get", "delete"])
 @pytest.mark.parametrize("guid, expected_status", [
     ("not-a-uuid", 400),

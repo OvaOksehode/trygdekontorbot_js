@@ -1,13 +1,26 @@
+import fnmatch
+
 from datetime import UTC, datetime
 
 from services.LedgerEntryService import create_check_transaction
 from models.Company import Company
 from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
 from models.CreateCompanyDTO import CreateCompanyDTO
-from models.Exceptions import CompanyAlreadyExistsError, CompanyNotFoundError, InvalidUpdateError, OwnerAlreadyHasCompanyError
+from models.Exceptions import CompanyAlreadyExistsError, CompanyNotFoundError, InvalidQueryError, InvalidUpdateError, OwnerAlreadyHasCompanyError
 from infrastructure.repositories.CompanyRepository import CompanyRepository
 
 from config import settings
+
+# ✅ Allowed query keys in API (camelCase) mapped to DB attribute names (snake_case)
+ALLOWED_QUERY_FILTERS = {
+    "externalId": "external_id",
+    "name": "name",
+    "ownerId": "owner_id",
+    "balance": "balance",
+    "createdAt": "created_at",
+    "deletedAt": "deleted_at",
+    "lastTrygdClaim": "last_trygd_claim",
+}
 
 def create_company(company_data: CreateCompanyDTO)-> Company:
     # 1️⃣ Validate uniqueness
@@ -61,3 +74,30 @@ def delete_company(external_guid):
     # company.owner_id = None
     # company.balance = 0
     CompanyRepository.update(company)
+    
+def query_companies(filters: dict) -> list[Company]:
+    if not filters:
+        raise InvalidQueryError("At least one filter must be provided")
+
+    # Extract optional search parameter
+    search = filters.pop("s", None)
+
+    # Validate filters
+    unknown_keys = [k for k in filters if k not in ALLOWED_QUERY_FILTERS]
+    if unknown_keys:
+        raise InvalidQueryError(f"Invalid filter(s): {', '.join(unknown_keys)}")
+
+    normalized_filters = {ALLOWED_QUERY_FILTERS[k]: v for k, v in filters.items()}
+
+    # Query repository ONLY with normalized filters
+    companies = CompanyRepository.query_companies(normalized_filters)
+
+    # Apply search in Python if provided
+    if search:
+        pattern = search.replace("%", "*").replace("_", "?")
+        companies = [c for c in companies if fnmatch.fnmatch(c.name, pattern)]
+
+    if not companies:
+        raise CompanyNotFoundError("No companies found with the provided filters.")
+
+    return companies

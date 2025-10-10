@@ -5,7 +5,7 @@ from models.CompanyViewModel import CompanyViewModel
 from models.CompanyTransactionViewModel import CompanyTransactionViewModel
 from services.mappers import check_transaction_to_viewmodel, company_to_viewmodel, company_transaction_to_viewmodel
 from services.LedgerEntryService import company_claim_cash, create_check_transaction, create_company_transaction, get_check_transaction_by_external_guid, get_company_transaction_by_external_guid
-from services.CompanyService import create_company, delete_company, get_company_by_external_guid, update_company
+from services.CompanyService import create_company, delete_company, get_company_by_external_guid, query_companies, update_company
 
 from models.Exceptions import CompanyAlreadyExistsError, CompanyNotEnoughFundsError, CompanyNotFoundError, InvalidTransactionAmountError, InvalidUpdateError, LedgerEntryNotFoundError, OwnerAlreadyHasCompanyError
 from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
@@ -47,6 +47,28 @@ def request_get_company(external_guid: str):
             status=200,
             mimetype="application/json"
         )
+    
+# GET localhost/api/company
+# ↩ Get all companies, optionally filtered by query params
+@api.route("/company", methods=["GET"])
+def request_query_companies():
+
+    # Extract query parameters that match the allowed ones
+    filters = {
+        key: value for key, value in request.args.items()
+    }
+
+    # 🔍 Fetch from your data layer (implement filtering in repository/service)
+    companies = query_companies(filters)
+
+    # Serialize to response models
+    result = [
+        CompanyViewModel.model_validate(company).model_dump(by_alias=True)
+        for company in companies
+    ]
+
+    return jsonify(result), 200
+
 
 # PATCH localhost/api/company/<external_guid>
 # 🔄 Update company info

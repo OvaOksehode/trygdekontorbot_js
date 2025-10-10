@@ -1,5 +1,6 @@
 from models.Company import Company
 from infrastructure.db.db import db
+from sqlalchemy import or_
 
 class CompanyRepository:
 
@@ -18,6 +19,24 @@ class CompanyRepository:
     @staticmethod
     def get_all():
         return db.session.query(Company).all()
+    
+    @staticmethod
+    def query_companies(filters: dict, search: str = None) -> list[Company]:
+        """
+        filters: exact match filters (e.g., owner_id, balance)
+        search: optional SQL wildcard search for the 'name' column
+        """
+        query = db.session.query(Company)
+
+        # Apply exact filters
+        for key, value in filters.items():
+            query = query.filter(getattr(Company, key) == value)
+
+        # Apply optional name search with SQL wildcards
+        if search:
+            query = query.filter(Company.name.like(search))
+
+        return query.all()
 
     @staticmethod
     def create(company_data: Company) -> Company:

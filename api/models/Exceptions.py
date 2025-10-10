@@ -33,6 +33,11 @@ class ClaimCooldownActiveError(Exception):
     """Raised when trying to claim cash while cooldown is active."""
     pass
 
+class InvalidQueryError(Exception):
+    """Raised when trying to claim cash while cooldown is active."""
+    pass
+
+
 from flask import jsonify
 from collections import OrderedDict
 
