@@ -3,60 +3,93 @@ const axios = require('axios');
 const apiUrl = process.env.FLASK_API_URL;
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('pensjoner')
-        .setDescription('Skriner hele selskapet ditt. Ingen bedre måte å gjøre det på enn å gi seg på topp!'),
-    async execute(interaction) {
-        // Få brukerens Discord ID, som vil fungere som company_id / owner_id
-        const ownerId = interaction.user.id;
+	data: new SlashCommandBuilder()
+		.setName('pensjoner')
+		.setDescription('Sletter selskapet ditt permanent. Er du sikker på at du vil gi deg på topp?'),
 
-        // Lag to knapper: Bekreft og Avbryt
-        const row = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('confirm_delete')
-                    .setLabel('Bekreft')
-                    .setStyle(ButtonStyle.Danger),
-                new ButtonBuilder()
-                    .setCustomId('cancel_delete')
-                    .setLabel('Avbryt')
-                    .setStyle(ButtonStyle.Secondary)
-            );
+	async execute(interaction) {
+		const discordId = interaction.user.id;
 
-        // Send en melding med bekreftelsesknappene
-        const message = await interaction.reply({
-            content: 'Er du sikker på at du vil slette selskapet ditt? Dette kan ikke angres!',
-            components: [row],
-            ephemeral: true  // Denne meldingen vil kun være synlig for brukeren selv
-        });
+		const row = new ActionRowBuilder().addComponents(
+			new ButtonBuilder()
+				.setCustomId('confirm_delete')
+				.setLabel('Bekreft')
+				.setStyle(ButtonStyle.Danger),
+			new ButtonBuilder()
+				.setCustomId('cancel_delete')
+				.setLabel('Avbryt')
+				.setStyle(ButtonStyle.Secondary)
+		);
 
-        // Opprett en listener for knappeinteraksjonen
-        const filter = i => i.user.id === interaction.user.id;
+		// ⚠️ Non-ephemeral so button collector works
+		const message = await interaction.reply({
+			content: '⚠️ Er du sikker på at du vil slette selskapet ditt? Dette kan **ikke angres**!',
+			components: [row],
+			ephemeral: false,
+		});
 
-        const collector = message.createMessageComponentCollector({ filter, time: 15000 }); // Gir brukeren 15 sekunder å reagere
+		const filter = i => i.user.id === discordId;
+		const collector = message.createMessageComponentCollector({ filter, time: 15000 });
 
-        collector.on('collect', async i => {
-            if (i.customId === 'confirm_delete') {
-                // Brukeren bekreftet slettingen
-                try {
-                    // Send DELETE-forespørsel til Flask API for å slette selskapet
-                    await axios.delete(`${apiUrl}/deletecompany/${ownerId}`);
+		collector.on('collect', async i => {
+			if (i.customId === 'confirm_delete') {
+				try {
+					// 1️⃣ Query the company belonging to this user
+					const queryResponse = await axios.get(`${apiUrl}/company`, {
+						params: { ownerId: discordId },
+					});
 
-                    await i.update({ content: 'Selskapet ditt ble slettet.', components: [] });
-                } catch (error) {
-                    console.error(error);
-                    await i.update({ content: 'Kunne ikke slette selskapet ditt. Vennligst prøv igjen senere.', components: [] });
-                }
-            } else if (i.customId === 'cancel_delete') {
-                // Brukeren avbrøt slettingen
-                await i.update({ content: 'Sletting av selskap avbrutt.', components: [] });
-            }
-        });
+					const companies = queryResponse.data;
 
-        collector.on('end', async collected => {
-            if (collected.size === 0) {
-                await interaction.editReply({ content: 'Ingen handling ble utført. Sletting av selskap avbrutt.', components: [] });
-            }
-        });
-    },
+					if (!companies || companies.length === 0) {
+						await i.update({
+							content: '⚠️ Fant ikke noe selskap registrert på deg.',
+							components: [],
+						});
+						return;
+					}
+
+					// Assuming one company per user
+					const companyUuid = companies[0].externalId;
+
+					// 2️⃣ Delete the company using its UUID
+					await axios.delete(`${apiUrl}/company/${companyUuid}`);
+
+					await i.update({
+						content: '✅ Selskapet ditt ble slettet permanent.',
+						components: [],
+					});
+				} catch (error) {
+					console.error('Error deleting company:', error.response?.data || error.message);
+
+					let translatedMessage = 'Kunne ikke slette selskapet ditt. Prøv igjen senere.';
+					const errCode = error.response?.data?.error;
+
+					if (errCode === 'companyNotFoundError')
+						translatedMessage = 'Fant ikke noe selskap registrert på deg.';
+					else if (errCode === 'databaseError')
+						translatedMessage = 'En databasefeil oppstod under slettingen.';
+
+					await i.update({
+						content: `⚠️ ${translatedMessage}`,
+						components: [],
+					});
+				}
+			} else if (i.customId === 'cancel_delete') {
+				await i.update({
+					content: '❎ Sletting av selskap avbrutt.',
+					components: [],
+				});
+			}
+		});
+
+		collector.on('end', async collected => {
+			if (collected.size === 0) {
+				await interaction.editReply({
+					content: '⌛ Ingen handling ble utført. Sletting av selskap avbrutt.',
+					components: [],
+				});
+			}
+		});
+	},
 };

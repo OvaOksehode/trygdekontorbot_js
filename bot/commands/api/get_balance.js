@@ -4,7 +4,7 @@ const apiUrl = process.env.FLASK_API_URL;
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('balance')
+        .setName('saldo')
         .setDescription('Viser saldoen til selskapet ditt.'),
     
     async execute(interaction) {

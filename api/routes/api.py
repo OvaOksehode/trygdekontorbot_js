@@ -113,11 +113,8 @@ def request_delete_company(external_guid: str):
         external_guid = str(uuid.UUID(external_guid))
     except ValueError:
         return jsonify({"error": "Invalid external_guid"}), 400
-    try:
-        delete_company(external_guid)
-        return Response(status=204)
-    except CompanyNotFoundError as error:
-        return jsonify({"error": str(error)}), 404
+    delete_company(external_guid)
+    return Response(status=204)
 
 # POST localhost/api/company-transaction
 # ✅ Create company transaction
