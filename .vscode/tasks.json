@@ -1,0 +1,22 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Deploy Discord Commands",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"deploy_commands.js"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/bot"
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"detail": "Runs deploy_commands.js from the bot/ directory so .env resolves correctly."
+		}
+	]
+}
