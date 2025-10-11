@@ -27,7 +27,7 @@ class Company(db.Model):
         db.Integer,
         nullable=False,
         server_default="-1",
-        unique=True
+        unique=False
     )
     balance = db.Column(
         "Balance",
