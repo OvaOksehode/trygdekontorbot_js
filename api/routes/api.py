@@ -81,28 +81,20 @@ def request_update_company(external_guid: str):
         external_guid = str(uuid.UUID(external_guid))
     except ValueError:
         return jsonify({"error": "Invalid external_guid"}), 400
-    try:
 
-        # ✅ Parse and validate request JSON using the Update DTO
-        dto = UpdateCompanyDTO(**request.json)
+    # ✅ Parse and validate request JSON using the Update DTO
+    dto = UpdateCompanyDTO(**request.json)
 
-        # ✅ Call service layer to apply updates
-        updated_company = update_company(external_guid, dto)
+    # ✅ Call service layer to apply updates
+    updated_company = update_company(external_guid, dto)
 
-        # ✅ Convert to viewmodel for response
-        return Response(
-            CompanyViewModel.model_validate(updated_company).model_dump_json(by_alias=True),  # indent optional for readability
-            # company_to_viewmodel(updated_company).model_dump_json(),  # indent optional for readability
-            status=200,
-            mimetype="application/json"
-        )
-
-    except ValidationError as error:
-        return jsonify(error.errors()), 400
-    except CompanyNotFoundError as error:
-        return jsonify({"error": str(error)}), 404
-    except CompanyAlreadyExistsError as error:
-        return jsonify({"error": str(error)}), 409
+    # ✅ Convert to viewmodel for response
+    return Response(
+        CompanyViewModel.model_validate(updated_company).model_dump_json(by_alias=True),  # indent optional for readability
+        # company_to_viewmodel(updated_company).model_dump_json(),  # indent optional for readability
+        status=200,
+        mimetype="application/json"
+    )
     
 # DELETE localhost/api/company/<external_guid>
 # ❌ Delete company
