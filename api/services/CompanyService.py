@@ -79,10 +79,8 @@ def query_companies(filters: dict) -> list[Company]:
     if not filters:
         raise InvalidQueryError("At least one filter must be provided")
 
-    # Extract optional search parameter
     search = filters.pop("s", None)
 
-    # Validate filters
     unknown_keys = [k for k in filters if k not in ALLOWED_QUERY_FILTERS]
     if unknown_keys:
         raise InvalidQueryError(f"Invalid filter(s): {', '.join(unknown_keys)}")
@@ -92,7 +90,9 @@ def query_companies(filters: dict) -> list[Company]:
     # Query repository ONLY with normalized filters
     companies = CompanyRepository.query_companies(normalized_filters)
 
-    # Apply search in Python if provided
+    companies = [c for c in companies if c.deleted_at is None]
+
+    # Apply optional name search
     if search:
         pattern = search.replace("%", "*").replace("_", "?")
         companies = [c for c in companies if fnmatch.fnmatch(c.name, pattern)]

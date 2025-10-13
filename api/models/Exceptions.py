@@ -30,7 +30,9 @@ class InvalidTransactionAmountError(Exception):
     pass
 
 class ClaimCooldownActiveError(Exception):
-    """Raised when trying to claim cash while cooldown is active."""
+    def __init__(self, message: str, cooldown_remaining_minutes: int):
+        super().__init__(message)
+        self.cooldown_remaining_minutes = cooldown_remaining_minutes
     pass
 
 class InvalidQueryError(Exception):

@@ -26,7 +26,6 @@ def test_create_company_success(sample_dto):
         assert result.name == "TestCo"
         assert result.owner_id == 123
 
-
 def test_query_companies_no_filters():
     with pytest.raises(InvalidQueryError) as exc_info:
         query_companies({})
@@ -49,41 +48,58 @@ def test_query_companies_no_results(mock_query):
     assert "No companies found" in str(exc_info.value)
     mock_query.assert_called_once()
 
-
 @patch.object(CompanyRepository, 'query_companies')
 def test_query_companies_success(mock_query, app):
     with app.app_context():
         mock_company = MagicMock()
+        mock_company.deleted_at = None  # ✅ simulate active company
+        mock_company.name = "TestCompany"
+
         mock_query.return_value = [mock_company]
 
         filters = {"name": "TestCompany"}
         result = query_companies(filters)
 
-        normalized_filters = {ALLOWED_QUERY_FILTERS["name"]: "TestCompany"}
-        # Updated to include search=None
-        mock_query.assert_called_once_with(normalized_filters)
         assert result == [mock_company]
+        mock_query.assert_called_once()
 
+@patch.object(CompanyRepository, 'query_companies')
+def test_query_companies_excludes_deleted(mock_query, app):
+    with app.app_context():
+        deleted_company = MagicMock()
+        deleted_company.deleted_at = "2025-10-05T12:00:00"  # simulate soft delete
+        mock_query.return_value = [deleted_company]
+
+        filters = {"name": "DeletedCo"}
+
+        with pytest.raises(CompanyNotFoundError):
+            query_companies(filters)
+
+# ✅ 1. Normalization test
 def test_query_companies_normalizes_filters():
-    # Ensure normalization of filters
     filters = {"name": "TestCompany", "ownerId": "123"}
-
     normalized_filters = {ALLOWED_QUERY_FILTERS[k]: v for k, v in filters.items()}
 
-    with patch.object(CompanyRepository, 'query_companies', return_value=[MagicMock()]) as mock_query:
+    mock_company = MagicMock()
+    mock_company.deleted_at = None  # ✅ active company
+
+    with patch.object(CompanyRepository, 'query_companies', return_value=[mock_company]) as mock_query:
         result = query_companies(filters)
-        # Updated to include search=None
+
         mock_query.assert_called_once_with(normalized_filters)
         assert len(result) == 1
+        assert result[0] == mock_company
 
+
+# ✅ 2. Search filtering test
 @patch.object(CompanyRepository, "query_companies")
 def test_query_companies_with_search(mock_query, app):
     """Test that search parameter filters the returned companies in-memory."""
     with app.app_context():
-        # Dummy objects with real .name strings
         class DummyCompany:
             def __init__(self, name):
                 self.name = name
+                self.deleted_at = None  # ✅ must be None for inclusion
 
         company1 = DummyCompany("AwesomeCompany")
         company2 = DummyCompany("OtherCompany")
@@ -92,9 +108,8 @@ def test_query_companies_with_search(mock_query, app):
         filters = {"ownerId": "123", "s": "Awesome%"}
         result = query_companies(filters)
 
-        # Repository should be called ONLY with normalized filters
         normalized_filters = {ALLOWED_QUERY_FILTERS["ownerId"]: "123"}
         mock_query.assert_called_once_with(normalized_filters)
 
-        # Search should filter in Python
+        # ✅ Only AwesomeCompany should remain after Python-level search filtering
         assert result == [company1]

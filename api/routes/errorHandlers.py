@@ -1,6 +1,6 @@
 from pydantic import ValidationError
 from routes.api import api
-from models.Exceptions import CompanyAlreadyExistsError, CompanyNotFoundError, ErrorResponse, InvalidQueryError, OwnerAlreadyHasCompanyError
+from models.Exceptions import ClaimCooldownActiveError, CompanyAlreadyExistsError, CompanyNotFoundError, ErrorResponse, InvalidQueryError, OwnerAlreadyHasCompanyError
 
 @api.errorhandler(ValidationError)
 def handle_validation_error(e):
@@ -43,6 +43,15 @@ def handle_validation_error(e):
         status_code=400,
     ).to_flask_response()
 
+@api.errorhandler(ClaimCooldownActiveError)
+def handle_validation_error(e):
+    return ErrorResponse(
+        error="claimCooldownActiveError",
+        description=str(e),
+        status_code=400,
+        payload={"cooldownRemainingMinutes": e.cooldown_remaining_minutes},
+    ).to_flask_response()
+
 @api.errorhandler(500)
 def handle_internal_error(e):
     return ErrorResponse(
@@ -50,3 +59,4 @@ def handle_internal_error(e):
         description=str(e),
         status_code=500,
     ).to_flask_response()
+    
