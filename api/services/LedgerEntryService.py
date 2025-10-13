@@ -109,12 +109,17 @@ def minutes_until_next_claim(company, cooldown_hours: int = 1) -> int:
     return int(remaining.total_seconds() // 60)
 
 def company_claim_cash(external_guid: str):
-    company = CompanyRepository.get_by_external_id(external_guid);
+    from services.CompanyService import get_company_by_external_guid    # Lazy import circular dependency fix, TODO: refactor
+    
+    company = get_company_by_external_guid(external_guid);
     if company is None:
         raise CompanyNotFoundError(f"Company with external_guid {external_guid} not found")
     
     if not can_claim(company):
-        raise ClaimCooldownActiveError(f"Claim is on cooldown for {company.name}. Please wait {minutes_until_next_claim(company)} minute(s) before trying again.")
+        raise ClaimCooldownActiveError(
+            f"Claim is on cooldown for {company.name}. Please wait {minutes_until_next_claim(company)} minute(s) before trying again.",
+            minutes_until_next_claim(company)
+                                       )
     persisted_ledger, persisted_tx = create_check_transaction(
         CreateCheckTransactionDTO(
             amount = company.trygd_amount,
