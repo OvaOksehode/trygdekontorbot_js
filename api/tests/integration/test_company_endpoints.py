@@ -145,8 +145,8 @@ def test_update_company_invalid_field(client, company_payload):
 
     res = client.patch(f"/api/company/{guid}", json={"balance": 999999})
     assert res.status_code == 400
-    errors = res.get_json()   # FIXED
-
+    body = res.get_json()   # FIXED
+    errors = body["details"]
     assert any("balance" in err["loc"] for err in errors)
     assert any("not permitted" in err["msg"].lower() for err in errors)
 

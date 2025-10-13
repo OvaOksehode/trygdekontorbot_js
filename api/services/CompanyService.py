@@ -25,7 +25,7 @@ ALLOWED_QUERY_FILTERS = {
 def create_company(company_data: CreateCompanyDTO)-> Company:
     # 1️⃣ Validate uniqueness
     company_by_owner = CompanyRepository.get_by_owner_id(company_data.owner_id)
-    if company_by_owner and not company_by_owner.deleted_at is None:
+    if company_by_owner and company_by_owner.deleted_at is None:
         raise OwnerAlreadyHasCompanyError(f"Owner {company_by_owner.owner_id} already has a company")
 
     company_by_name = CompanyRepository.get_by_name(company_data.name)
