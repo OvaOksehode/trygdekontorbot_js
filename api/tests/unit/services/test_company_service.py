@@ -1,9 +1,31 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
+from models.Company import Company
+from models.CreateCompanyDTO import CreateCompanyDTO
 from infrastructure.repositories.CompanyRepository import CompanyRepository
-from services.CompanyService import ALLOWED_QUERY_FILTERS, query_companies
+from services.CompanyService import ALLOWED_QUERY_FILTERS, create_company, query_companies
 from models.Exceptions import CompanyNotFoundError, InvalidQueryError
+
+@pytest.fixture
+def sample_dto():
+    return CreateCompanyDTO(name="TestCo", owner_id=123)
+
+def test_create_company_success(sample_dto):
+    mock_company = Company(name="TestCo", owner_id=123, external_id="uuid123")
+
+    with patch("services.CompanyService.CompanyRepository.get_by_owner_id", return_value=None), \
+         patch("services.CompanyService.CompanyRepository.get_by_name", return_value=None), \
+         patch("services.CompanyService.CompanyRepository.create", return_value=mock_company), \
+         patch("services.CompanyService.create_check_transaction") as mock_check:
+
+        result = create_company(sample_dto)
+
+        assert result == mock_company
+        mock_check.assert_called_once()
+        assert result.name == "TestCo"
+        assert result.owner_id == 123
+
 
 def test_query_companies_no_filters():
     with pytest.raises(InvalidQueryError) as exc_info:
