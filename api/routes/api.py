@@ -36,10 +36,8 @@ def request_get_company(external_guid: str):
         external_guid = str(uuid.UUID(external_guid))
     except ValueError:
         return jsonify({"error": "Invalid external_guid"}), 400
-    try:
-        company = get_company_by_external_guid(external_guid)
-    except CompanyNotFoundError as error:
-        return jsonify({"error": str(error)}), 404
+    company = get_company_by_external_guid(external_guid)
+
 
     return Response(
             CompanyViewModel.model_validate(company).model_dump_json(by_alias=True),  # indent optional for readability
@@ -50,6 +48,7 @@ def request_get_company(external_guid: str):
     
 # GET localhost/api/company
 # ↩ Get all companies, optionally filtered by query params
+# TODO: Add pagination
 @api.route("/company", methods=["GET"])
 def request_query_companies():
 

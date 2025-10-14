@@ -52,7 +52,7 @@ def create_company(company_data: CreateCompanyDTO)-> Company:
 
     return new_company
 
-def get_company_by_external_guid(external_guid: str):
+def get_company_by_external_guid(external_guid: str) -> Company:
     company = CompanyRepository.get_by_external_id(external_guid);
     if company is None or company.deleted_at is not None:
         raise CompanyNotFoundError(f"Company with external_guid {external_guid} not found")
