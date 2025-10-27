@@ -112,6 +112,26 @@ class LedgerEntryRepository:
         db.session.commit()
         return True
 
+    @staticmethod
+    def query_ledger_entries(filters: dict, limit: int | None = None):
+        query = db.session.query(LedgerEntry)
+
+        if "company_uuid" in filters:
+            query = query.filter(LedgerEntry.company_uuid == filters["company_uuid"])
+        if "type" in filters:
+            query = query.filter(LedgerEntry.type == filters["type"])
+        if "created_at__gte" in filters:
+            query = query.filter(LedgerEntry.created_at >= filters["created_at__gte"])
+        if "created_at__lte" in filters:
+            query = query.filter(LedgerEntry.created_at <= filters["created_at__lte"])
+
+        query = query.order_by(LedgerEntry.created_at.desc())
+        if limit:
+            query = query.limit(limit)
+
+        return query.all()
+
+
     # Extra helpers (if you want type-specific queries)
 
     # @staticmethod

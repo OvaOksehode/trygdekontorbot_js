@@ -1,6 +1,7 @@
 import uuid
 from flask import Blueprint, Response, current_app, jsonify, request
 from pydantic import ValidationError
+import services.orchestrators.get_company_latest_transactions as orc
 from models.CompanyViewModel import CompanyViewModel
 from models.CompanyTransactionViewModel import CompanyTransactionViewModel
 from services.mappers import check_transaction_to_viewmodel, company_to_viewmodel, company_transaction_to_viewmodel
@@ -184,7 +185,7 @@ def request_get_check_transaction(external_guid: str):
     except ValueError:
         return jsonify({"error": "Invalid external_guid"}), 400
     try:
-        newLedgerEntry, newTransaction = get_check_transaction_by_external_guid(external_guid)
+        newLedgerEntry, newTransaction = orc.get_latest_transactions(external_guid)
     except LedgerEntryNotFoundError as error:
         return jsonify({"error": str(error)}), 404
 
@@ -212,3 +213,42 @@ def request_claim_cash(external_guid: str):
         )
     except LedgerEntryNotFoundError as error:
         return jsonify({"error": str(error)}), 404
+    
+@api.route("/company/<company_uuid>/latest-transactions", methods=["GET"])
+def get_latest_transactions(company_uuid: str):
+    # Validate limit parameter
+    try:
+        limit = int(request.args.get("limit", 10))
+    except ValueError:
+        return jsonify({"error": "limit must be an integer"}), 400
+
+    # Step 1: orchestrator fetches latest ledger entries + subtype details
+    try:
+        entries_with_details = orc.get_latest_transactions(
+            receiver_company_id==company_uuid,
+            limit=limit
+        )
+    except LedgerEntryNotFoundError:
+        return jsonify({"error": "No ledger entries found for this company"}), 404
+
+    # Step 2: prepare response
+    response = {
+        "totalCount": len(entries_with_details),
+        "checkTransactions": [],
+        "companyTransactions": []
+    }
+
+    for entry, detail in entries_with_details:
+        if detail is None:
+            # Skip generic entries if you want; or include them in a "genericLedgerEntries" list
+            continue
+        elif hasattr(detail, "sender_authority"):  # CheckTransactionDetails
+            response["checkTransactions"].append(
+                check_transaction_to_viewmodel(entry, detail).model_dump(by_alias=True)
+            )
+        elif hasattr(detail, "receiver_company_uuid"):  # CompanyTransactionDetails
+            response["companyTransactions"].append(
+                company_transaction_to_viewmodel(entry, detail).model_dump(by_alias=True)
+            )
+
+    return jsonify(response), 200

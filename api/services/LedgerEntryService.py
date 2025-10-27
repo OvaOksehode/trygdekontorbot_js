@@ -2,13 +2,21 @@ from datetime import UTC, datetime, timedelta, timezone
 from typing import Tuple
 from models.CheckTransactionDetails import CheckTransactionDetails
 from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
-from models.Exceptions import ClaimCooldownActiveError, CompanyNotEnoughFundsError, CompanyNotFoundError, LedgerEntryNotFoundError
+from models.Exceptions import ClaimCooldownActiveError, CompanyNotEnoughFundsError, CompanyNotFoundError, InvalidQueryError, LedgerEntryNotFoundError
 from infrastructure.repositories.CompanyRepository import CompanyRepository
 from infrastructure.repositories.LedgerEntryRepository import LedgerEntryRepository
 from models.CreateCompanyTransactionDTO import CreateCompanyTransactionDTO
 from models.CompanyTransactionDetails import CompanyTransactionDetails
 from models.LedgerEntry import LedgerEntry
 from config import settings
+
+
+ALLOWED_QUERY_FILTERS = {
+    "receiverCompanyId": "receiver_company_uuid",
+    "type": "type",
+    "date_from": "created_at__gte",
+    "date_to": "created_at__lte",
+}
 
 def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> Tuple[LedgerEntry, CompanyTransactionDetails]:
     # Check that sender and receiver exists
@@ -132,3 +140,19 @@ def company_claim_cash(external_guid: str):
     CompanyRepository.update(company);
 
     return persisted_ledger, persisted_tx
+
+def query_ledger_entries(filters: dict, limit: int | None = None):
+        if not filters:
+            raise InvalidQueryError("At least one filter must be provided")
+
+        unknown_keys = [k for k in filters if k not in ALLOWED_QUERY_FILTERS]
+        if unknown_keys:
+            raise InvalidQueryError(f"Invalid filter(s): {', '.join(unknown_keys)}")
+
+        normalized = {ALLOWED_QUERY_FILTERS[k]: v for k, v in filters.items()}
+        entries = LedgerEntryRepository.query_ledger_entries(normalized, limit=limit)
+
+        if not entries:
+            raise LedgerEntryNotFoundError("No ledger entries found with the provided filters.")
+
+        return entries
