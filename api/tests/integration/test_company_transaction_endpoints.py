@@ -78,8 +78,8 @@ def test_create_transaction_nonexistent_company(client, company):
     assert "not found" in res.get_json()["error"].lower()
 
 
-def test_get_company_transaction(client, company):
-    """Create a transaction, then fetch it by external_id."""
+def test_get_company_transactions(client, company):
+    """Create a company transaction and verify it is a LedgerEntry subclass."""
     receiver_payload = {
         "name": fake.company(),
         "ownerId": random.randint(3001, 4000),
@@ -87,22 +87,36 @@ def test_get_company_transaction(client, company):
     receiver = client.post("/api/company", json=receiver_payload).get_json()
 
     tx_payload = {
-        "amount": 50,   # also reliant on starter cash
+        "amount": 50,
         "receiverCompanyId": receiver["externalId"],
         "senderCompanyId": company["externalId"],
     }
 
+    # Create the transaction
     res_create = client.post("/api/company-transaction", json=tx_payload)
     assert res_create.status_code == 201
     tx = res_create.get_json()
     tx_guid = tx["externalId"]
 
+    # It should include the LedgerEntry type info
+    assert tx["type"] == "company_transaction_details"
+    assert tx["amount"] == tx_payload["amount"]
+
+    # Fetch the transaction directly
     res_get = client.get(f"/api/company-transaction/{tx_guid}")
     assert res_get.status_code == 200
     fetched = res_get.get_json()
 
     assert fetched["externalId"] == tx_guid
     assert fetched["amount"] == tx_payload["amount"]
+    assert fetched["type"] == "company_transaction_details"
+
+    # Fetch from /ledger-entry to ensure polymorphic query works
+    res_all = client.get("/api/ledger-entry")
+    assert res_all.status_code == 200
+    all_entries = res_all.get_json()
+    assert any(entry["externalId"] == tx_guid for entry in all_entries)
+
 
 
 @pytest.mark.parametrize("guid", ["not-a-uuid", "12345", "!!!"])

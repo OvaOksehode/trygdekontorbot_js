@@ -1,9 +1,9 @@
 # services/mappers.py
-from models.CheckTransactionDetailsViewModel import CheckTransactionViewModel
+from models.CheckTransactionDetailsViewModel import CheckTransactionDetailsViewModel
 from models.CheckTransactionDetails import CheckTransactionDetails
 from models.CompanyTransactionDetails import CompanyTransactionDetails
 from models.LedgerEntry import LedgerEntry
-from models.CompanyTransactionViewModel import CompanyTransactionViewModel
+from models.CompanyTransactionDetailsViewModel import CompanyTransactionDetailsViewModel
 from models.CompanyViewModel import CompanyViewModel
 
 def company_to_viewmodel(company):
@@ -17,7 +17,7 @@ def company_to_viewmodel(company):
     )
 
 def company_transaction_to_viewmodel(ledgerEntry: LedgerEntry, companyTransaction: CompanyTransactionDetails):
-    return CompanyTransactionViewModel(
+    return CompanyTransactionDetailsViewModel(
         external_id=ledgerEntry.external_id,
         amount=ledgerEntry.amount,
         created_at=ledgerEntry.created_at,
@@ -26,7 +26,7 @@ def company_transaction_to_viewmodel(ledgerEntry: LedgerEntry, companyTransactio
     )
 
 def check_transaction_to_viewmodel(ledgerEntry: LedgerEntry, checkTransaction: CheckTransactionDetails):
-    return CheckTransactionViewModel(
+    return CheckTransactionDetailsViewModel(
         external_id=ledgerEntry.external_id,
         amount=ledgerEntry.amount,
         created_at=ledgerEntry.created_at,

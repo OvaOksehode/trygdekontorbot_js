@@ -18,67 +18,60 @@ ALLOWED_QUERY_FILTERS = {
     "date_to": "created_at__lte",
 }
 
-def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> Tuple[LedgerEntry, CompanyTransactionDetails]:
-    # Check that sender and receiver exists
+def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> CompanyTransactionDetails:
+    # Check sender and receiver exist
     sender = CompanyRepository.get_by_external_id(dto_data.sender_company_id)
     receiver = CompanyRepository.get_by_external_id(dto_data.receiver_company_id)
 
     if sender is None or receiver is None:
-        raise CompanyNotFoundError(f"Company with external_guid {dto_data.sender_company_id} not found")
-    
+        raise CompanyNotFoundError("Sender or receiver not found")
+
     if dto_data.amount > sender.balance:
-        raise CompanyNotEnoughFundsError(f"Sender {sender.name} does not have enough funds to complete the requested transaction")
+        raise CompanyNotEnoughFundsError(
+            f"Sender {sender.name} does not have enough funds"
+        )
 
-    # Check that sender has enough balance
-    newLedgerEntry = LedgerEntry(
-        amount = dto_data.amount,
-        receiver_company_id = dto_data.receiver_company_id
-    )
-    newCompanyTransactionDetails = CompanyTransactionDetails(
-        sender_company_id = dto_data.sender_company_id
-    )
-    # Persist ledger + transaction details via repository
-    persisted_ledger, persisted_tx = LedgerEntryRepository.createCompanyTransaction(
-        newLedgerEntry,
-        newCompanyTransactionDetails
+    # Create a single polymorphic object (NO separate LedgerEntry)
+    tx = CompanyTransactionDetails(
+        amount=dto_data.amount,
+        receiver_company_id=receiver.company_id,
+        sender_company_id=sender.company_id
     )
 
-    # Update balances after persistence
+    # Persist via repo
+    persisted_tx = LedgerEntryRepository.createCompanyTransaction(tx)
+
+    # Update balances
     sender.balance -= dto_data.amount
     receiver.balance += dto_data.amount
 
     CompanyRepository.update(sender)
     CompanyRepository.update(receiver)
 
-    return persisted_ledger, persisted_tx
+    return persisted_tx
 
-def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> Tuple[LedgerEntry, CheckTransactionDetails]:
-    # Check that sender and receiver exists
+def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> CheckTransactionDetails:
+    # 1️⃣ Ensure receiver exists
     receiver = CompanyRepository.get_by_external_id(dto_data.receiver_company_id)
-
     if receiver is None:
-        raise CompanyNotFoundError(f"Company with external_guid {dto_data.receiver_company_id} not found")
+        raise CompanyNotFoundError(
+            f"Company with external_guid {dto_data.receiver_company_id} not found"
+        )
 
-    # Check that sender has enough balance
-    newLedgerEntry = LedgerEntry(
-        amount = dto_data.amount,
-        receiver_company_id = receiver.company_id
-    )
-    newCheckTransactionDetails = CheckTransactionDetails(
-        sender_authority = dto_data.sender_authority
-    )
-    # Persist ledger + transaction details via repository
-    persisted_ledger, persisted_tx = LedgerEntryRepository.createCompanyTransaction(
-        newLedgerEntry,
-        newCheckTransactionDetails
+    # 2️⃣ Create the polymorphic subclass instance
+    check_tx = CheckTransactionDetails(
+        amount=dto_data.amount,                       # base LedgerEntry field
+        receiver_company_id=receiver.company_id,      # base LedgerEntry field
+        sender_authority=dto_data.sender_authority    # subclass-specific field
     )
 
-    # Update balances after persistence
+    LedgerEntryRepository.createCheckTransaction(check_tx)
+
+    # 4️⃣ Update receiver balance
     receiver.balance += dto_data.amount
-
     CompanyRepository.update(receiver)
 
-    return persisted_ledger, persisted_tx
+    return check_tx
 
 def get_company_transaction_by_external_guid(external_guid: str):
     transaction = LedgerEntryRepository.get_company_transaction_by_external_id(external_guid);

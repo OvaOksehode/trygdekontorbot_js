@@ -58,44 +58,28 @@ class LedgerEntryRepository:
         return db.session.query(LedgerEntry).all()
 
     @staticmethod
-    def createCompanyTransaction(ledger_entry: LedgerEntry, tx_details: CompanyTransactionDetails) -> Tuple[LedgerEntry, CompanyTransactionDetails]:
+    def createCompanyTransaction(tx_details: CompanyTransactionDetails) -> CompanyTransactionDetails:
         """
-        Persists a LedgerEntry and its corresponding CompanyTransactionDetails
-        in a single atomic transaction, setting up the 1:1 relationship.
+        Creates a CompanyTransactionDetails, which is a subclass of LedgerEntry.
         """
-
-        # Link 1:1 relationship
-        tx_details.ledger_entry = ledger_entry
-
-        # Persist both objects
-        db.session.add(ledger_entry)
+        
         db.session.add(tx_details)
-
-        # Commit atomically
         db.session.commit()
+        db.session.refresh(tx_details)
 
-        # Now tx_details.id == ledger_entry.id because of FK
-        return ledger_entry, tx_details
+        return tx_details
 
     @staticmethod
-    def createCheckTransaction(ledger_entry: LedgerEntry, tx_details: CheckTransactionDetails) -> Tuple[LedgerEntry, CheckTransactionDetails]:
+    def createCheckTransaction(tx_details: CheckTransactionDetails) -> CheckTransactionDetails:
         """
-        Persists a LedgerEntry and its corresponding CompanyTransactionDetails
-        in a single atomic transaction, setting up the 1:1 relationship.
+        Creates a CheckTransactionDetails, which is a subclass of LedgerEntry.
         """
-
-        # Link 1:1 relationship
-        tx_details.ledger_entry = ledger_entry
-
-        # Persist both objects
-        db.session.add(ledger_entry)
+        # Persist the subclass only — SQLAlchemy handles the base table insert
         db.session.add(tx_details)
-
-        # Commit atomically
         db.session.commit()
+        db.session.refresh(tx_details)
 
-        # Now tx_details.id == ledger_entry.id because of FK
-        return ledger_entry, tx_details
+        return tx_details
 
     @staticmethod
     def update(entry: LedgerEntry) -> LedgerEntry:
@@ -114,22 +98,34 @@ class LedgerEntryRepository:
 
     @staticmethod
     def query_ledger_entries(filters: dict, limit: int | None = None):
+        """
+        Query ledger entries (including subclasses) using optional filters.
+
+        Args:
+            filters (dict): A mapping of field -> value, e.g. {"receiver_company_id": 3, "type": "check_transaction_details"}
+            limit (int | None): Optional limit for number of results.
+
+        Returns:
+            list[LedgerEntry]: List of LedgerEntry or subclass instances.
+        """
         query = db.session.query(LedgerEntry)
 
-        if "company_uuid" in filters:
-            query = query.filter(LedgerEntry.company_uuid == filters["company_uuid"])
-        if "type" in filters:
-            query = query.filter(LedgerEntry.type == filters["type"])
-        if "created_at__gte" in filters:
-            query = query.filter(LedgerEntry.created_at >= filters["created_at__gte"])
-        if "created_at__lte" in filters:
-            query = query.filter(LedgerEntry.created_at <= filters["created_at__lte"])
+        # Apply dynamic filters safely
+        for attr, value in (filters or {}).items():
+            if hasattr(LedgerEntry, attr):
+                query = query.filter(getattr(LedgerEntry, attr) == value)
 
-        query = query.order_by(LedgerEntry.created_at.desc())
+        # Optional limit
         if limit:
             query = query.limit(limit)
 
-        return query.all()
+        # Order newest first, as a reasonable default
+        query = query.order_by(LedgerEntry.created_at.desc())
+
+        # Execute
+        results = query.all()
+
+        return results
 
 
     # Extra helpers (if you want type-specific queries)

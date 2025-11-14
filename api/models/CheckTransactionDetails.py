@@ -2,10 +2,10 @@ from models.LedgerEntry import LedgerEntry
 from infrastructure.db.db import db
 from datetime import UTC, datetime
 
-class CheckTransactionDetails(db.Model):
-    __tablename__ = "CheckTransactionDetails"  # plural table name
+class CheckTransactionDetails(LedgerEntry):
+    __tablename__ = "CheckTransactionDetails"
 
-    # PK is also FK to LedgerEntry
+    # Use the same PK as LedgerEntry
     ledger_entry_id = db.Column(
         "LedgerEntryID",
         db.Integer,
@@ -21,11 +21,15 @@ class CheckTransactionDetails(db.Model):
         db.String,
         nullable=False
     )
-    # Add other fields specific to CompanyTransactionDetails here
 
-    # Relationship back to LedgerEntry (1:1)
-    ledger_entry = db.relationship(
-        "LedgerEntry",
-        back_populates='check_transaction_details',
-        uselist=False
+    # Other fields specific to checks
+    check_number = db.Column("CheckNumber", db.String(50))
+    issued_date = db.Column(
+        "IssuedDate",
+        db.DateTime,
+        default=lambda: datetime.now(UTC)
     )
+
+    __mapper_args__ = {
+        "polymorphic_identity": "check_transaction_details"
+    }

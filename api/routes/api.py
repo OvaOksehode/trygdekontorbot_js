@@ -1,9 +1,10 @@
 import uuid
 from flask import Blueprint, Response, current_app, jsonify, request
 from pydantic import ValidationError
+from models.CompanyTransactionViewModel import CompanyTransactionViewModel
 import services.orchestrators.get_company_latest_transactions as orc
 from models.CompanyViewModel import CompanyViewModel
-from models.CompanyTransactionViewModel import CompanyTransactionViewModel
+from models.CompanyTransactionDetailsViewModel import CompanyTransactionDetailsViewModel
 from services.mappers import check_transaction_to_viewmodel, company_to_viewmodel, company_transaction_to_viewmodel
 from services.LedgerEntryService import company_claim_cash, create_check_transaction, create_company_transaction, get_check_transaction_by_external_guid, get_company_transaction_by_external_guid
 from services.CompanyService import create_company, delete_company, get_company_by_external_guid, query_companies, update_company
@@ -117,9 +118,9 @@ def request_create_company_transaction():
     # validate that amount is int not float or anything else (should be handled by pydantic, test this)
     try:
         dto_data = CreateCompanyTransactionDTO(**request.json)
-        newLedgerEntry, newTransaction = create_company_transaction(dto_data)
+        newTransaction = create_company_transaction(dto_data)
         return Response(
-            company_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(by_alias=True),  # indent optional for readability
+            CompanyTransactionViewModel.model_validate(newTransaction).model_dump_json(by_alias=True),  # indent optional for readability
             status=201,
             mimetype="application/json"
         )
