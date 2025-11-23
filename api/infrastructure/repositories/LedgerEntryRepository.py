@@ -93,21 +93,14 @@ class LedgerEntryRepository:
         return True
 
     @staticmethod
-    def query_ledger_entries(filters: dict, limit: int | None = None):
-        query = db.session.query(LedgerEntry).options(
-            selectinload(LedgerEntry.CompanyTransactionDetails),
-            selectinload(LedgerEntry.CheckTransactionDetails),
-        )
+    def query_ledger_entries(filters: dict) -> list[LedgerEntry]:
 
-        # Apply filters on base fields only
-        for attr, value in (filters or {}).items():
-            if hasattr(LedgerEntry, attr):
-                query = query.filter(getattr(LedgerEntry, attr) == value)
+        query = db.session.query(LedgerEntry)
 
-        if limit:
-            query = query.limit(limit)
+        for key, value in filters.items():
+            query = query.filter(getattr(LedgerEntry, key) == value)
 
-        return query.order_by(LedgerEntry.created_at.desc()).all()
+        return query.all()
 
     # Extra helpers (if you want type-specific queries)
 

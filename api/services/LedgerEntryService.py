@@ -13,6 +13,7 @@ from config import settings
 
 ALLOWED_QUERY_FILTERS = {
     "receiverCompanyId": "receiver_company_uuid",
+    "senderCompanyId": "sender_company_uuid",
     "type": "type",
     "date_from": "created_at__gte",
     "date_to": "created_at__lte",
@@ -134,21 +135,24 @@ def company_claim_cash(external_guid: str):
 
     return persisted_ledger, persisted_tx
 
-def query_ledger_entries(filters: dict, limit: int | None = None):
-        # if not filters:
-        #     raise InvalidQueryError("At least one filter must be provided")
+def query_ledger_entries(filters: dict) -> list[LedgerEntry]:
+    if not filters:
+        raise InvalidQueryError("At least one filter must be provided")
 
-        unknown_keys = [k for k in filters if k not in ALLOWED_QUERY_FILTERS]
-        if unknown_keys:
-            raise InvalidQueryError(f"Invalid filter(s): {', '.join(unknown_keys)}")
+    unknown_keys = [k for k in filters if k not in ALLOWED_QUERY_FILTERS]
+    if unknown_keys:
+        raise InvalidQueryError(f"Invalid filter(s): {', '.join(unknown_keys)}")
 
-        normalized = {ALLOWED_QUERY_FILTERS[k]: v for k, v in filters.items()}
-        entries = LedgerEntryRepository.query_ledger_entries(normalized, limit=limit)
+    normalized_filters = {
+        ALLOWED_QUERY_FILTERS[k]: v for k, v in filters.items()
+    }
 
-        if not entries:
-            raise LedgerEntryNotFoundError("No ledger entries found with the provided filters.")
+    entries = LedgerEntryRepository.query_ledger_entries(normalized_filters)
 
-        return entries
+    if not entries:
+        raise LedgerEntryNotFoundError("No ledger entries found.")
+
+    return entries
     
 def query_ledger_entry_by_guid(guid: str) -> LedgerEntry:
     result = LedgerEntryRepository.get_by_external_id(guid)

@@ -1,6 +1,6 @@
 import uuid
-from flask import Blueprint, Response, current_app, jsonify, request
-from pydantic import ValidationError
+from flask import Blueprint, Response, current_app, json, jsonify, request
+from pydantic import TypeAdapter, ValidationError
 from models.LedgerEntryViewModel import LedgerEntryViewModel
 from models.CompanyTransactionDetailsViewModel import CompanyTransactionDetailsViewModel
 import services.orchestrators.get_company_latest_transactions as orc
@@ -259,16 +259,23 @@ def get_latest_transactions(company_uuid: str):
 
 @api.route("/ledger-entry", methods=["GET"])
 def request_query_ledger_entries():
-    filters = {key: value for key, value in request.args.items()}
 
-    try:
-        ledger_entries = query_ledger_entries(filters)
-    except LedgerEntryNotFoundError:
-        return jsonify({"error": "No ledger entries found"}), 404
+    filters = dict(request.args)
+    entries = query_ledger_entries(filters)
 
-    result = [ledger_entry_to_viewmodel(entry) for entry in ledger_entries]
-    return jsonify(result), 200
+    adapter = TypeAdapter(list[LedgerEntryViewModel])
 
+    payload = adapter.dump_json(
+        [LedgerEntryViewModel.model_validate(e) for e in entries],
+        by_alias=True,
+        exclude_none=True
+    )
+
+    return Response(
+        payload,
+        mimetype="application/json",
+        status=200
+    )
 
 @api.route("/ledger-entry/<external_guid>", methods=["GET"])
 def request_get_ledger_entry(external_guid: str):
