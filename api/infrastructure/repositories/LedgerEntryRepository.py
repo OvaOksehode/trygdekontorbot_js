@@ -2,6 +2,7 @@
 from typing import Optional, Tuple
 from models.Exceptions import LedgerEntryNotFoundError
 from infrastructure.db.db import db
+from sqlalchemy.orm import selectinload
 from models.CheckTransactionDetails import CheckTransactionDetails
 from models.LedgerEntry import LedgerEntry
 from models.CompanyTransactionDetails import CompanyTransactionDetails
@@ -13,22 +14,17 @@ class LedgerEntryRepository:
         return db.session.get(LedgerEntry, entry_id)
 
     @staticmethod
-    def get_company_transaction_by_external_id(external_id: str) -> Optional[Tuple[LedgerEntry, CompanyTransactionDetails]]:
-        """
-        Fetch a LedgerEntry with its CompanyTransactionDetails by external_id.
-        Returns None if not found or if no company transaction details exist.
-        """
-        result = (
-            db.session.query(LedgerEntry, CompanyTransactionDetails)
-            .join(CompanyTransactionDetails, CompanyTransactionDetails.ledger_entry_id == LedgerEntry.ledger_entry_id)
+    def get_by_external_id(external_id: str):
+        return (
+            db.session.query(LedgerEntry)
             .filter(LedgerEntry.external_id == external_id)
+            .options(
+                # only needed if there's a chance the entry is CompanyTransactionDetails
+                selectinload(CompanyTransactionDetails.sender_company)
+            )
             .first()
         )
 
-        if result is None:
-            raise LedgerEntryNotFoundError(f"Company transaction with external_id {external_id} not found")
-
-        return result  # will be (LedgerEntry, CompanyTransactionDetails) or None
 
     @staticmethod
     def get_check_transaction_by_external_id(external_id: str) -> Optional[Tuple[LedgerEntry, CompanyTransactionDetails]]:
@@ -98,35 +94,20 @@ class LedgerEntryRepository:
 
     @staticmethod
     def query_ledger_entries(filters: dict, limit: int | None = None):
-        """
-        Query ledger entries (including subclasses) using optional filters.
+        query = db.session.query(LedgerEntry).options(
+            selectinload(LedgerEntry.CompanyTransactionDetails),
+            selectinload(LedgerEntry.CheckTransactionDetails),
+        )
 
-        Args:
-            filters (dict): A mapping of field -> value, e.g. {"receiver_company_id": 3, "type": "check_transaction_details"}
-            limit (int | None): Optional limit for number of results.
-
-        Returns:
-            list[LedgerEntry]: List of LedgerEntry or subclass instances.
-        """
-        query = db.session.query(LedgerEntry)
-
-        # Apply dynamic filters safely
+        # Apply filters on base fields only
         for attr, value in (filters or {}).items():
             if hasattr(LedgerEntry, attr):
                 query = query.filter(getattr(LedgerEntry, attr) == value)
 
-        # Optional limit
         if limit:
             query = query.limit(limit)
 
-        # Order newest first, as a reasonable default
-        query = query.order_by(LedgerEntry.created_at.desc())
-
-        # Execute
-        results = query.all()
-
-        return results
-
+        return query.order_by(LedgerEntry.created_at.desc()).all()
 
     # Extra helpers (if you want type-specific queries)
 

@@ -1,6 +1,0 @@
-from models.CheckTransactionDetailsViewModel import CheckTransactionDetailsViewModel
-from models.LedgerEntryViewModel import LedgerEntryViewModel
-
-
-class CheckTransactionViewModel(LedgerEntryViewModel, CheckTransactionDetailsViewModel):
-    pass

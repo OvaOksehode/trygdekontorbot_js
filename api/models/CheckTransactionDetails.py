@@ -22,14 +22,6 @@ class CheckTransactionDetails(LedgerEntry):
         nullable=False
     )
 
-    # Other fields specific to checks
-    check_number = db.Column("CheckNumber", db.String(50))
-    issued_date = db.Column(
-        "IssuedDate",
-        db.DateTime,
-        default=lambda: datetime.now(UTC)
-    )
-
     __mapper_args__ = {
-        "polymorphic_identity": "check_transaction_details"
+        "polymorphic_identity": "checkTransaction"
     }

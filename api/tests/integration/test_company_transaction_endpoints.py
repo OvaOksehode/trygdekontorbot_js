@@ -103,7 +103,7 @@ def test_get_company_transactions(client, company):
     assert tx["amount"] == tx_payload["amount"]
 
     # Fetch the transaction directly
-    res_get = client.get(f"/api/company-transaction/{tx_guid}")
+    res_get = client.get(f"/api/ledger-entry/{tx_guid}")
     assert res_get.status_code == 200
     fetched = res_get.get_json()
 

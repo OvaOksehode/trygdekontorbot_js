@@ -1,10 +1,10 @@
-from pydantic import BaseModel, Field
+from datetime import datetime
+from typing import Literal
 
+from models.LedgerEntryViewModel import LedgerEntryViewModel
 
-class CheckTransactionDetailsViewModel(BaseModel):
-    sender_authority: str = Field(..., alias="senderAuthority")
+class CheckTransactionDetailsViewModel(LedgerEntryViewModel):
+    type: Literal["check_transaction_details"]
+    sender_authority: str
 
-    model_config = {
-        "validate_by_name": True,
-        "from_attributes": True,
-    }
+    model_config = dict(from_attributes=True)

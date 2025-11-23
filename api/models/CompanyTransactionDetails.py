@@ -27,9 +27,6 @@ class CompanyTransactionDetails(LedgerEntry):
         nullable=False
     )
 
-    # Any additional fields specific to CompanyTransactionDetails
-    transaction_reference = db.Column("TransactionReference", db.String(50))
-
     # 🔹 Relationship to Company
     sender_company = db.relationship(
         "Company",
@@ -38,5 +35,5 @@ class CompanyTransactionDetails(LedgerEntry):
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": "company_transaction_details"
+        "polymorphic_identity": "companyTransaction"
     }

@@ -135,8 +135,8 @@ def company_claim_cash(external_guid: str):
     return persisted_ledger, persisted_tx
 
 def query_ledger_entries(filters: dict, limit: int | None = None):
-        if not filters:
-            raise InvalidQueryError("At least one filter must be provided")
+        # if not filters:
+        #     raise InvalidQueryError("At least one filter must be provided")
 
         unknown_keys = [k for k in filters if k not in ALLOWED_QUERY_FILTERS]
         if unknown_keys:
@@ -149,3 +149,7 @@ def query_ledger_entries(filters: dict, limit: int | None = None):
             raise LedgerEntryNotFoundError("No ledger entries found with the provided filters.")
 
         return entries
+    
+def query_ledger_entry_by_guid(guid: str) -> LedgerEntry:
+    result = LedgerEntryRepository.get_by_external_id(guid)
+    return result
