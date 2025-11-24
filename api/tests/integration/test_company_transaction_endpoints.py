@@ -79,6 +79,48 @@ def test_create_transaction_nonexistent_company(client, company):
 
 
 def test_get_company_transactions(client, company):
+    """Create a company transaction and verify it is returned via ledger-entry endpoints"""
+
+    receiver_payload = {
+        "name": fake.company(),
+        "ownerId": random.randint(3001, 4000),
+    }
+    receiver = client.post("/api/company", json=receiver_payload).get_json()
+
+    tx_payload = {
+        "amount": 50,
+        "receiverCompanyId": receiver["externalId"],
+        "senderCompanyId": company["externalId"],
+    }
+
+    # ✅ Create the transaction
+    res_create = client.post("/api/company-transaction", json=tx_payload)
+    assert res_create.status_code == 201
+    tx = res_create.get_json()
+    tx_guid = tx["externalId"]
+
+    # ✅ Verify creation response
+    assert tx["type"] == "company_transaction_details"
+    assert tx["amount"] == tx_payload["amount"]
+
+    # ✅ Fetch SINGLE ledger entry by GUID
+    res_get = client.get(f"/api/ledger-entry/{tx_guid}")
+    assert res_get.status_code == 200
+
+    fetched = res_get.get_json()
+    assert fetched["externalId"] == tx_guid
+    assert fetched["amount"] == tx_payload["amount"]
+    assert fetched["type"] == "company_transaction_details"
+
+    # ✅ Fetch ALL ledger entries
+    res_all = client.get("/api/ledger-entry")
+    assert res_all.status_code == 200
+
+    all_entries = res_all.get_json()
+    assert isinstance(all_entries, list)
+
+    # Make sure our created transaction exists in the results
+    assert any(entry["externalId"] == tx_guid for entry in all_entries)
     """Create a company transaction and verify it is a LedgerEntry subclass."""
     receiver_payload = {
         "name": fake.company(),

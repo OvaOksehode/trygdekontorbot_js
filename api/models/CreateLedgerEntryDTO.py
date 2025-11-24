@@ -2,10 +2,8 @@ from pydantic import BaseModel, Field, ConfigDict, computed_field
 from typing import Optional, Any
 from datetime import datetime
 
-class LedgerEntryViewModel(BaseModel):
-    external_id: str = Field(..., alias="externalId")
+class CreateLedgerEntryDTO(BaseModel):
     amount: int = Field(..., alias="amount")
-    created_at: datetime = Field(..., alias="createdAt")
     receiver: Optional[Any] = Field(None, exclude=True)
     type: str = Field(..., alias="type")
 

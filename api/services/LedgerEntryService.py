@@ -14,10 +14,13 @@ from config import settings
 ALLOWED_QUERY_FILTERS = {
     "receiverCompanyId": "receiver_company_uuid",
     "senderCompanyId": "sender_company_uuid",
+    "receiverCompanyName": "receiver_company.name",
+    "senderCompanyName": "sender_company.name",
     "type": "type",
     "date_from": "created_at__gte",
     "date_to": "created_at__lte",
 }
+
 
 def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> CompanyTransactionDetails:
     # Check sender and receiver exist

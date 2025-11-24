@@ -292,3 +292,20 @@ def request_get_ledger_entry(external_guid: str):
         mimetype="application/json",
         status=200
         )
+    
+# TODO: Finish centralized ledger entry creation with server layer class delegation (iykwim)
+@api.route("/ledger-entry", methods=["POST"])
+def request_create_ledger_entry():
+    dto = CreateLedgerEntryDTO(**request.json)
+
+    vm = LedgerEntryViewModel.model_validate(entry)
+    # Use model_dump to get a dict and exclude None values
+    payload = vm.model_dump_json(by_alias=True, exclude_none=True)
+
+    # return jsonify(payload)
+    # or:
+    return Response(
+        payload,
+        mimetype="application/json",
+        status=200
+        )
