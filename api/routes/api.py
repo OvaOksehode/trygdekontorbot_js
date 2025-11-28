@@ -1,20 +1,22 @@
 import uuid
 from flask import Blueprint, Response, current_app, json, jsonify, request
 from pydantic import TypeAdapter, ValidationError
-from models.LedgerEntryViewModel import LedgerEntryViewModel
-from models.CompanyTransactionDetailsViewModel import CompanyTransactionDetailsViewModel
+from domain.models.CreateLedgerEntryDTO import CreateLedgerEntryDTO
+from domain.models.LedgerEntryViewModel import LedgerEntryViewModel
+from domain.models.CompanyTransactionDetailsViewModel import CompanyTransactionDetailsViewModel
+from services import LedgerEntryService
 import services.orchestrators.get_company_latest_transactions as orc
-from models.CompanyViewModel import CompanyViewModel
-from models.CompanyTransactionDetailsViewModel import CompanyTransactionDetailsViewModel
+from domain.models.CompanyViewModel import CompanyViewModel
+from domain.models.CompanyTransactionDetailsViewModel import CompanyTransactionDetailsViewModel
 from services.mappers import check_transaction_to_viewmodel, company_to_viewmodel, company_transaction_to_viewmodel, ledger_entry_to_viewmodel
 from services.LedgerEntryService import company_claim_cash, create_check_transaction, create_company_transaction, get_check_transaction_by_external_guid, get_company_transaction_by_external_guid, query_ledger_entries, query_ledger_entry_by_guid
 from services.CompanyService import create_company, delete_company, get_company_by_external_guid, query_companies, update_company
 
-from models.Exceptions import CompanyAlreadyExistsError, CompanyNotEnoughFundsError, CompanyNotFoundError, InvalidTransactionAmountError, InvalidUpdateError, LedgerEntryNotFoundError, OwnerAlreadyHasCompanyError
-from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
-from models.CreateCompanyDTO import CreateCompanyDTO
-from models.CreateCompanyTransactionDTO import CreateCompanyTransactionDTO
-from models.UpdateCompanyDTO import UpdateCompanyDTO
+from domain.models.Exceptions import CompanyAlreadyExistsError, CompanyNotEnoughFundsError, CompanyNotFoundError, InvalidTransactionAmountError, InvalidUpdateError, LedgerEntryNotFoundError, OwnerAlreadyHasCompanyError
+from domain.models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
+from domain.models.CreateCompanyDTO import CreateCompanyDTO
+from domain.models.CreateCompanyTransactionDTO import CreateCompanyTransactionDTO
+from domain.models.UpdateCompanyDTO import UpdateCompanyDTO
 
 api = Blueprint("api", __name__)
 
@@ -296,16 +298,17 @@ def request_get_ledger_entry(external_guid: str):
 # TODO: Finish centralized ledger entry creation with server layer class delegation (iykwim)
 @api.route("/ledger-entry", methods=["POST"])
 def request_create_ledger_entry():
+    # 1️⃣ Parse the request into a DTO
     dto = CreateLedgerEntryDTO(**request.json)
 
+    # 2️⃣ Delegate creation to the service layer
+    entry = LedgerEntryService.create_ledger_entry(dto)
+
+    # 3️⃣ Convert the domain object to a viewmodel for serialization
     vm = LedgerEntryViewModel.model_validate(entry)
-    # Use model_dump to get a dict and exclude None values
+
+    # 4️⃣ Serialize to JSON, excluding None values
     payload = vm.model_dump_json(by_alias=True, exclude_none=True)
 
-    # return jsonify(payload)
-    # or:
-    return Response(
-        payload,
-        mimetype="application/json",
-        status=200
-        )
+    # 5️⃣ Return clean HTTP response
+    return Response(payload, mimetype="application/json", status=201)

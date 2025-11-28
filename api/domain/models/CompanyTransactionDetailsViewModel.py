@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Literal
 
-from models.LedgerEntryViewModel import LedgerEntryViewModel
+from domain.models.LedgerEntryViewModel import LedgerEntryViewModel
 
 class CompanyTransactionDetailsViewModel(LedgerEntryViewModel):
     type: Literal["company_transaction_details"]

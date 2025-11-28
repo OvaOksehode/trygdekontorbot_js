@@ -3,10 +3,10 @@ import fnmatch
 from datetime import UTC, datetime
 
 from services.LedgerEntryService import create_check_transaction
-from models.Company import Company
-from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
-from models.CreateCompanyDTO import CreateCompanyDTO
-from models.Exceptions import CompanyAlreadyExistsError, CompanyNotFoundError, InvalidQueryError, InvalidUpdateError, OwnerAlreadyHasCompanyError
+from domain.models.Company import Company
+from domain.models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
+from domain.models.CreateCompanyDTO import CreateCompanyDTO
+from domain.models.Exceptions import CompanyAlreadyExistsError, CompanyNotFoundError, InvalidQueryError, InvalidUpdateError, OwnerAlreadyHasCompanyError
 from infrastructure.repositories.CompanyRepository import CompanyRepository
 
 from config import settings

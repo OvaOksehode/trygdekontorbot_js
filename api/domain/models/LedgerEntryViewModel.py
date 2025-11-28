@@ -3,37 +3,34 @@ from typing import Optional, Any
 from datetime import datetime
 
 class LedgerEntryViewModel(BaseModel):
+    # Base fields
     external_id: str = Field(..., alias="externalId")
     amount: int = Field(..., alias="amount")
     created_at: datetime = Field(..., alias="createdAt")
-    receiver: Optional[Any] = Field(None, exclude=True)
     type: str = Field(..., alias="type")
 
+    # Optional fields for polymorphic types
     sender_authority: Optional[str] = Field(None, alias="senderAuthority")
 
-    # Internal: allow Pydantic to pick up the relationship from the ORM object.
-    # Excluded from output so it does not leak.
+    # Internal / ORM relationships (excluded from JSON)
+    receiver: Optional[Any] = Field(None, exclude=True)
     sender_company: Optional[Any] = Field(None, exclude=True)
 
+    # Pydantic config
     model_config = ConfigDict(
         from_attributes=True,
         populate_by_name=True
     )
 
-    # Computed field exposed in JSON as senderCompanyExternalId
+    # Computed fields for JSON
     @computed_field(alias="senderCompanyExternalId")
     def sender_company_external_id(self) -> Optional[str]:
-        # `self.sender_company` is the ORM Company instance (or None)
-        company = self.sender_company
-        if company is None:
+        if self.sender_company is None:
             return None
-        # adapt to whatever your Company uses for the external id attribute name
-        return getattr(company, "external_id", None)
+        return getattr(self.sender_company, "external_id", None)
+
     @computed_field(alias="receiverCompanyExternalId")
     def receiver_company_external_id(self) -> Optional[str]:
-        # `self.sender_company` is the ORM Company instance (or None)
-        company = self.receiver
-        if company is None:
+        if self.receiver is None:
             return None
-        # adapt to whatever your Company uses for the external id attribute name
-        return getattr(company, "external_id", None)
+        return getattr(self.receiver, "external_id", None)

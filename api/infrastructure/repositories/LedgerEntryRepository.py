@@ -1,12 +1,12 @@
 # repositories/LedgerEntryRepository.py
 from typing import Optional, Tuple
-from models.Company import Company
-from models.Exceptions import InvalidQueryError, LedgerEntryNotFoundError
+from domain.models.Company import Company
+from domain.models.Exceptions import InvalidQueryError, LedgerEntryNotFoundError
 from infrastructure.db.db import db
 from sqlalchemy.orm import selectinload
-from models.CheckTransactionDetails import CheckTransactionDetails
-from models.LedgerEntry import LedgerEntry
-from models.CompanyTransactionDetails import CompanyTransactionDetails
+from domain.models.CheckTransactionDetails import CheckTransactionDetails
+from domain.models.LedgerEntry import LedgerEntry
+from domain.models.CompanyTransactionDetails import CompanyTransactionDetails
 
 class LedgerEntryRepository:
 

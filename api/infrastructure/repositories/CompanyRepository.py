@@ -1,4 +1,4 @@
-from models.Company import Company
+from domain.models.Company import Company
 from infrastructure.db.db import db
 from sqlalchemy import or_
 

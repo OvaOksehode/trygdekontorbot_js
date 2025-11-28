@@ -1,4 +1,4 @@
-from models.LedgerEntry import LedgerEntry
+from domain.models.LedgerEntry import LedgerEntry
 from infrastructure.db.db import db
 from datetime import UTC, datetime
 

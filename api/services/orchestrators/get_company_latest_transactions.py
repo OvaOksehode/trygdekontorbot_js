@@ -1,4 +1,4 @@
-from models.Exceptions import LedgerEntryNotFoundError
+from domain.models.Exceptions import LedgerEntryNotFoundError
 from services import LedgerEntryService
 
 

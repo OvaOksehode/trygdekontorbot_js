@@ -1,11 +1,11 @@
 # services/mappers.py
-from models.LedgerEntryViewModel import LedgerEntryViewModel
-from models.CheckTransactionDetailsViewModel import CheckTransactionDetailsViewModel
-from models.CheckTransactionDetails import CheckTransactionDetails
-from models.CompanyTransactionDetails import CompanyTransactionDetails
-from models.LedgerEntry import LedgerEntry
-from models.CompanyTransactionDetailsViewModel import CompanyTransactionDetailsViewModel
-from models.CompanyViewModel import CompanyViewModel
+from domain.models.LedgerEntryViewModel import LedgerEntryViewModel
+from domain.models.CheckTransactionDetailsViewModel import CheckTransactionDetailsViewModel
+from domain.models.CheckTransactionDetails import CheckTransactionDetails
+from domain.models.CompanyTransactionDetails import CompanyTransactionDetails
+from domain.models.LedgerEntry import LedgerEntry
+from domain.models.CompanyTransactionDetailsViewModel import CompanyTransactionDetailsViewModel
+from domain.models.CompanyViewModel import CompanyViewModel
 
 def company_to_viewmodel(company):
     return CompanyViewModel(

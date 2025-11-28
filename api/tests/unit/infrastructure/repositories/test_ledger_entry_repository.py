@@ -1,8 +1,8 @@
 import pytest
 from datetime import datetime, UTC, timedelta
-from models.LedgerEntry import LedgerEntry
-from models.CompanyTransactionDetails import CompanyTransactionDetails
-from models.CheckTransactionDetails import CheckTransactionDetails
+from domain.models.LedgerEntry import LedgerEntry
+from domain.models.CompanyTransactionDetails import CompanyTransactionDetails
+from domain.models.CheckTransactionDetails import CheckTransactionDetails
 from infrastructure.repositories.LedgerEntryRepository import LedgerRepository
 from infrastructure.db.db import db
 

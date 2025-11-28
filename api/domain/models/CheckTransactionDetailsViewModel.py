@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from models.LedgerEntryViewModel import LedgerEntryViewModel
+from domain.models.LedgerEntryViewModel import LedgerEntryViewModel
 
 class CheckTransactionDetailsViewModel(LedgerEntryViewModel):
     type: Literal["check_transaction_details"]

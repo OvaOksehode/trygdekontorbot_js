@@ -1,13 +1,15 @@
 from datetime import UTC, datetime, timedelta, timezone
 from typing import Tuple
-from models.CheckTransactionDetails import CheckTransactionDetails
-from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
-from models.Exceptions import ClaimCooldownActiveError, CompanyNotEnoughFundsError, CompanyNotFoundError, InvalidQueryError, LedgerEntryNotFoundError
+from domain.factories.LedgerEntryFactory import LedgerEntryFactory
+from domain.models.CheckTransactionDetails import CheckTransactionDetails
+from domain.models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
+from domain.models.CreateLedgerEntryDTO import CreateLedgerEntryDTO
+from domain.models.Exceptions import ClaimCooldownActiveError, CompanyNotEnoughFundsError, CompanyNotFoundError, InvalidQueryError, LedgerEntryNotFoundError
 from infrastructure.repositories.CompanyRepository import CompanyRepository
 from infrastructure.repositories.LedgerEntryRepository import LedgerEntryRepository
-from models.CreateCompanyTransactionDTO import CreateCompanyTransactionDTO
-from models.CompanyTransactionDetails import CompanyTransactionDetails
-from models.LedgerEntry import LedgerEntry
+from domain.models.CreateCompanyTransactionDTO import CreateCompanyTransactionDTO
+from domain.models.CompanyTransactionDetails import CompanyTransactionDetails
+from domain.models.LedgerEntry import LedgerEntry
 from config import settings
 
 
@@ -160,3 +162,6 @@ def query_ledger_entries(filters: dict) -> list[LedgerEntry]:
 def query_ledger_entry_by_guid(guid: str) -> LedgerEntry:
     result = LedgerEntryRepository.get_by_external_id(guid)
     return result
+
+def create_ledger_entry(dto: CreateLedgerEntryDTO) -> LedgerEntry:
+        return LedgerEntryFactory.create(dto)

@@ -1,11 +1,11 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from models.Company import Company
-from models.CreateCompanyDTO import CreateCompanyDTO
+from domain.models.Company import Company
+from domain.models.CreateCompanyDTO import CreateCompanyDTO
 from infrastructure.repositories.CompanyRepository import CompanyRepository
 from services.CompanyService import ALLOWED_QUERY_FILTERS, create_company, query_companies
-from models.Exceptions import CompanyNotFoundError, InvalidQueryError
+from domain.models.Exceptions import CompanyNotFoundError, InvalidQueryError
 
 @pytest.fixture
 def sample_dto():

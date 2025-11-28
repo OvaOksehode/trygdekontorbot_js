@@ -91,16 +91,17 @@ def test_get_company_transactions(client, company):
         "amount": 50,
         "receiverCompanyId": receiver["externalId"],
         "senderCompanyId": company["externalId"],
+        "type": "companyTransaction"
     }
 
     # ✅ Create the transaction
-    res_create = client.post("/api/company-transaction", json=tx_payload)
+    res_create = client.post("/api/ledger-entry", json=tx_payload)
     assert res_create.status_code == 201
     tx = res_create.get_json()
     tx_guid = tx["externalId"]
 
     # ✅ Verify creation response
-    assert tx["type"] == "company_transaction_details"
+    assert tx["type"] == "companyTransaction"
     assert tx["amount"] == tx_payload["amount"]
 
     # ✅ Fetch SINGLE ledger entry by GUID
@@ -110,10 +111,10 @@ def test_get_company_transactions(client, company):
     fetched = res_get.get_json()
     assert fetched["externalId"] == tx_guid
     assert fetched["amount"] == tx_payload["amount"]
-    assert fetched["type"] == "company_transaction_details"
+    assert fetched["type"] == "companyTransaction"
 
     # ✅ Fetch ALL ledger entries
-    res_all = client.get("/api/ledger-entry")
+    res_all = client.get("/api/ledger-entry?receiverCompanyId=" + receiver["externalId"])
     assert res_all.status_code == 200
 
     all_entries = res_all.get_json()
@@ -141,7 +142,7 @@ def test_get_company_transactions(client, company):
     tx_guid = tx["externalId"]
 
     # It should include the LedgerEntry type info
-    assert tx["type"] == "company_transaction_details"
+    assert tx["type"] == "companyTransaction"
     assert tx["amount"] == tx_payload["amount"]
 
     # Fetch the transaction directly
@@ -151,7 +152,7 @@ def test_get_company_transactions(client, company):
 
     assert fetched["externalId"] == tx_guid
     assert fetched["amount"] == tx_payload["amount"]
-    assert fetched["type"] == "company_transaction_details"
+    assert fetched["type"] == "companyTransaction"
 
     # Fetch from /ledger-entry to ensure polymorphic query works
     res_all = client.get("/api/ledger-entry")
