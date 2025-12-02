@@ -4,6 +4,7 @@ from domain.models.Company import Company
 from domain.models.Exceptions import InvalidQueryError, LedgerEntryNotFoundError
 from infrastructure.db.db import db
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased
 from domain.models.CheckTransactionDetails import CheckTransactionDetails
 from domain.models.LedgerEntry import LedgerEntry
 from domain.models.CompanyTransactionDetails import CompanyTransactionDetails
@@ -152,6 +153,32 @@ class LedgerEntryRepository:
             else:
                 # unknown key -> raise or ignore depending on your policy
                 raise InvalidQueryError(f"Invalid filter: {key}")
+
+        return query.all()
+
+    @staticmethod
+    def get_for_company(company_external_id: str, limit: int, offset: int):
+        CTD = aliased(CompanyTransactionDetails)
+
+        # Step 1: fetch the company by external_id
+        company = db.session.query(Company).filter_by(external_id=company_external_id).first()
+        if not company:
+            return []  # or raise 404
+
+        company_id = company.company_id  # internal PK
+
+        # Step 2: query inbound/outbound transactions
+        query = (
+            db.session.query(LedgerEntry)
+            .outerjoin(CTD, CTD.ledger_entry_id == LedgerEntry.ledger_entry_id)
+            .filter(
+                (LedgerEntry.receiver_company_id == company_id) |
+                (CTD.sender_company_id == company_id)
+            )
+            .order_by(LedgerEntry.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
 
         return query.all()
 

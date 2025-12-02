@@ -4,6 +4,7 @@ from pydantic import TypeAdapter, ValidationError
 from domain.models.CreateLedgerEntryDTO import CreateLedgerEntryDTO
 from domain.models.LedgerEntryViewModel import LedgerEntryViewModel
 from domain.models.CompanyTransactionDetailsViewModel import CompanyTransactionDetailsViewModel
+from domain.models.TransactionPaginationParams import TransactionPaginationParams
 from services import LedgerEntryService
 import services.orchestrators.get_company_latest_transactions as orc
 from domain.models.CompanyViewModel import CompanyViewModel
@@ -211,9 +212,9 @@ def request_claim_cash(external_guid: str):
     except ValueError:
         return jsonify({"error": "Invalid external_guid"}), 400
     try:
-        newLedgerEntry, newTransaction = company_claim_cash(external_guid)
+        newLedgerEntry = company_claim_cash(external_guid)
         return Response(
-            check_transaction_to_viewmodel(newLedgerEntry, newTransaction).model_dump_json(by_alias=True),  # indent optional for readability
+            LedgerEntryViewModel.model_validate(newLedgerEntry).model_dump_json(by_alias=True, exclude_none=True),  # indent optional for readability
             status=201,
             mimetype="application/json"
         )
@@ -259,25 +260,26 @@ def get_latest_transactions(company_uuid: str):
 
     return jsonify(response), 200
 
-@api.route("/ledger-entry", methods=["GET"])
-def request_query_ledger_entries():
+@api.route("/company/<string:company_external_id>/transaction", methods=["GET"])
+def get_company_transactions(company_external_id: str):
 
-    filters = dict(request.args)
-    entries = query_ledger_entries(filters)
+    limit = request.args.get("limit", 20, type=int)
+    offset = request.args.get("offset", 0, type=int)
+    
+    transactions = LedgerEntryService.get_company_transactions(
+        company_external_id,
+        limit=limit,
+        offset=offset
+    )
 
-    adapter = TypeAdapter(list[LedgerEntryViewModel])
-
-    payload = adapter.dump_json(
-        [LedgerEntryViewModel.model_validate(e) for e in entries],
+    # Serialize
+    payload = TypeAdapter(list[LedgerEntryViewModel]).dump_json(
+        [LedgerEntryViewModel.model_validate(t) for t in transactions],
         by_alias=True,
         exclude_none=True
     )
 
-    return Response(
-        payload,
-        mimetype="application/json",
-        status=200
-    )
+    return Response(payload, mimetype="application/json", status=200)
 
 @api.route("/ledger-entry/<external_guid>", methods=["GET"])
 def request_get_ledger_entry(external_guid: str):

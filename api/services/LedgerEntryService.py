@@ -14,8 +14,8 @@ from config import settings
 
 
 ALLOWED_QUERY_FILTERS = {
-    "receiverCompanyId": "receiver_company_uuid",
-    "senderCompanyId": "sender_company_uuid",
+    "receiverCompanyId": "receiver.extenal_id",
+    "senderCompanyId": "sender.external_id",
     "receiverCompanyName": "receiver_company.name",
     "senderCompanyName": "sender_company.name",
     "type": "type",
@@ -127,18 +127,19 @@ def company_claim_cash(external_guid: str):
             f"Claim is on cooldown for {company.name}. Please wait {minutes_until_next_claim(company)} minute(s) before trying again.",
             minutes_until_next_claim(company)
                                        )
-    persisted_ledger, persisted_tx = create_check_transaction(
-        CreateCheckTransactionDTO(
+    persisted_tx = create_ledger_entry(
+        CreateLedgerEntryDTO(
             amount = company.trygd_amount,
             receiver_company_id = company.external_id,
-            sender_authority = settings.default_trygd_authority
+            sender_authority = settings.default_trygd_authority,
+            type="checkTransaction"
         )
     )
     # company.balance += persisted_ledger.amount;
     company.last_trygd_claim = datetime.now(UTC)
     CompanyRepository.update(company);
 
-    return persisted_ledger, persisted_tx
+    return persisted_tx
 
 def query_ledger_entries(filters: dict) -> list[LedgerEntry]:
     if not filters:
@@ -165,3 +166,10 @@ def query_ledger_entry_by_guid(guid: str) -> LedgerEntry:
 
 def create_ledger_entry(dto: CreateLedgerEntryDTO) -> LedgerEntry:
         return LedgerEntryFactory.create(dto)
+    
+def get_company_transactions(company_external_id: str, limit: int = 20, offset: int = 0):
+    return LedgerEntryRepository.get_for_company(
+            company_external_id,
+            limit=limit,
+            offset=offset
+        )

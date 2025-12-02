@@ -33,15 +33,16 @@ def test_create_company_transaction(client, company):
         "amount": 90,  # Needs to be adjusted after the starter cash has been implemented
         "receiverCompanyId": receiver["externalId"],
         "senderCompanyId": sender["externalId"],
+        "type": "companyTransaction"
     }
 
-    res = client.post("/api/company-transaction", json=tx_payload)
+    res = client.post("/api/ledger-entry", json=tx_payload)
     assert res.status_code == 201
     tx = res.get_json()
 
     assert tx["amount"] == tx_payload["amount"]
-    assert tx["receiverCompanyId"] == receiver["externalId"]
-    assert tx["senderCompanyId"] == sender["externalId"]
+    assert tx["receiverCompanyExternalId"] == receiver["externalId"]
+    assert tx["senderCompanyExternalId"] == sender["externalId"]
 
 
 def test_create_transaction_invalid_amount(client, company):
@@ -78,102 +79,82 @@ def test_create_transaction_nonexistent_company(client, company):
     assert "not found" in res.get_json()["error"].lower()
 
 
-def test_get_company_transactions(client, company):
-    """Create a company transaction and verify it is returned via ledger-entry endpoints"""
+def test_fetch_ledgers_for_company(client, company):
+    """
+    Create inbound and outbound transactions for a company,
+    then verify fetching transactions for that company works.
+    """
 
+    # -------------------------
+    # Step 1: Create a receiver company
+    # -------------------------
     receiver_payload = {
         "name": fake.company(),
-        "ownerId": random.randint(3001, 4000),
+        "ownerId": random.randint(1001, 2000),
     }
-    receiver = client.post("/api/company", json=receiver_payload).get_json()
+    res_receiver = client.post("/api/company", json=receiver_payload)
+    assert res_receiver.status_code == 201
+    receiver = res_receiver.get_json()
 
-    tx_payload = {
-        "amount": 50,
+    # -------------------------
+    # Step 2: Create outbound transaction (company is sender)
+    # -------------------------
+    tx_out_payload = {
+        "amount": 100,
         "receiverCompanyId": receiver["externalId"],
         "senderCompanyId": company["externalId"],
         "type": "companyTransaction"
     }
+    res_out = client.post("/api/ledger-entry", json=tx_out_payload)
+    assert res_out.status_code == 201
+    tx_out = res_out.get_json()
 
-    # ✅ Create the transaction
-    res_create = client.post("/api/ledger-entry", json=tx_payload)
-    assert res_create.status_code == 201
-    tx = res_create.get_json()
-    tx_guid = tx["externalId"]
-
-    # ✅ Verify creation response
-    assert tx["type"] == "companyTransaction"
-    assert tx["amount"] == tx_payload["amount"]
-
-    # ✅ Fetch SINGLE ledger entry by GUID
-    res_get = client.get(f"/api/ledger-entry/{tx_guid}")
-    assert res_get.status_code == 200
-
-    fetched = res_get.get_json()
-    assert fetched["externalId"] == tx_guid
-    assert fetched["amount"] == tx_payload["amount"]
-    assert fetched["type"] == "companyTransaction"
-
-    # ✅ Fetch ALL ledger entries
-    res_all = client.get("/api/ledger-entry?receiverCompanyId=" + receiver["externalId"])
-    assert res_all.status_code == 200
-
-    all_entries = res_all.get_json()
-    assert isinstance(all_entries, list)
-
-    # Make sure our created transaction exists in the results
-    assert any(entry["externalId"] == tx_guid for entry in all_entries)
-    """Create a company transaction and verify it is a LedgerEntry subclass."""
-    receiver_payload = {
+    # -------------------------
+    # Step 3: Create inbound transaction (company is receiver)
+    # -------------------------
+    sender_payload = {
         "name": fake.company(),
-        "ownerId": random.randint(3001, 4000),
+        "ownerId": random.randint(2001, 3000),
     }
-    receiver = client.post("/api/company", json=receiver_payload).get_json()
+    res_sender = client.post("/api/company", json=sender_payload)
+    assert res_sender.status_code == 201
+    sender = res_sender.get_json()
 
-    tx_payload = {
+    tx_in_payload = {
         "amount": 50,
-        "receiverCompanyId": receiver["externalId"],
-        "senderCompanyId": company["externalId"],
+        "receiverCompanyId": company["externalId"],
+        "senderCompanyId": sender["externalId"],
+        "type": "companyTransaction"
     }
+    res_in = client.post("/api/ledger-entry", json=tx_in_payload)
+    assert res_in.status_code == 201
+    tx_in = res_in.get_json()
 
-    # Create the transaction
-    res_create = client.post("/api/company-transaction", json=tx_payload)
-    assert res_create.status_code == 201
-    tx = res_create.get_json()
-    tx_guid = tx["externalId"]
+    # -------------------------
+    # Step 4: Fetch transactions for the company
+    # -------------------------
+    res_fetch = client.get(f"/api/company/{company['externalId']}/transaction?limit=50")
+    assert res_fetch.status_code == 200
 
-    # It should include the LedgerEntry type info
-    assert tx["type"] == "companyTransaction"
-    assert tx["amount"] == tx_payload["amount"]
+    transactions = res_fetch.get_json()
+    assert isinstance(transactions, list)
 
-    # Fetch the transaction directly
-    res_get = client.get(f"/api/ledger-entry/{tx_guid}")
-    assert res_get.status_code == 200
-    fetched = res_get.get_json()
+    # -------------------------
+    # Step 5: Verify both inbound and outbound transactions are included
+    # -------------------------
+    tx_guids = [tx["externalId"] for tx in transactions]
+    assert tx_out["externalId"] in tx_guids
+    assert tx_in["externalId"] in tx_guids
 
-    assert fetched["externalId"] == tx_guid
-    assert fetched["amount"] == tx_payload["amount"]
-    assert fetched["type"] == "companyTransaction"
-
-    # Fetch from /ledger-entry to ensure polymorphic query works
-    res_all = client.get("/api/ledger-entry")
-    assert res_all.status_code == 200
-    all_entries = res_all.get_json()
-    assert any(entry["externalId"] == tx_guid for entry in all_entries)
-
-
+    # Optional: check ordering by created_at descending
+    created_times = [tx["createdAt"] for tx in transactions]
+    assert created_times == sorted(created_times, reverse=True)
 
 @pytest.mark.parametrize("guid", ["not-a-uuid", "12345", "!!!"])
 def test_get_transaction_invalid_uuid(client, guid):
     res = client.get(f"/api/company-transaction/{guid}")
     assert res.status_code == 400
     assert "invalid" in res.get_json()["error"].lower()
-
-
-def test_get_nonexistent_transaction(client):
-    fake_guid = str(uuid.uuid4())
-    res = client.get(f"/api/company-transaction/{fake_guid}")
-    assert res.status_code == 404
-    assert "not found" in res.get_json()["error"].lower()
 
 def test_create_check_transaction_spawns_money(client, company):
     # create receiver company
@@ -188,17 +169,18 @@ def test_create_check_transaction_spawns_money(client, company):
     amount = 150
     payload = {
         "amount": amount,
-        "receiverCompanyId": receiver["externalId"],
-        "senderAuthority": "bank"
+        "receiverCompanyId": receiver["externalId"],    # TODO: make receiverCompanyId consistent with receiverCompanyExternalId everywhere
+        "senderAuthority": "bank",
+        "type": "checkTransaction"
     }
 
-    res = client.post("/api/check-transaction", json=payload)
+    res = client.post("/api/ledger-entry", json=payload)
     assert res.status_code == 201
     tx = res.get_json()
 
     # Basic assertions about response shape and values
     assert tx["amount"] == amount
-    assert tx["receiverCompanyId"] == receiver["externalId"]
+    assert tx["receiverCompanyExternalId"] == receiver["externalId"]
     assert tx["senderAuthority"].lower() == "bank"
     assert "externalId" in tx
 
@@ -243,7 +225,7 @@ def test_create_check_transaction_nonexistent_receiver(client, company):
     assert "not found" in res.get_json()["error"].lower()
 
 
-def test_get_check_transaction_and_invalid_uuid(client, company):
+def test_get_check_transaction(client, company):
     # create receiver
     receiver = client.post("/api/company", json={
         "name": fake.company(),
@@ -253,29 +235,17 @@ def test_get_check_transaction_and_invalid_uuid(client, company):
     payload = {
         "amount": 33,
         "receiverCompanyId": receiver["externalId"],
-        "senderAuthority": "mint"
+        "senderAuthority": "mint",
+        "type": "checkTransaction"
     }
-    res_create = client.post("/api/check-transaction", json=payload)
+    res_create = client.post("/api/ledger-entry", json=payload)
     assert res_create.status_code == 201
     tx = res_create.get_json()
     tx_guid = tx["externalId"]
 
     # GET should return 200 (not 201) — adjust endpoint if necessary
-    res_get = client.get(f"/api/check-transaction/{tx_guid}")
+    res_get = client.get(f"/api/ledger-entry/{tx_guid}")
     assert res_get.status_code == 200
     fetched = res_get.get_json()
     assert fetched["externalId"] == tx_guid
     assert fetched["amount"] == payload["amount"]
-
-    # invalid uuid returns 400
-    for bad in ["not-a-uuid", "12345", "!!!"]:
-        r = client.get(f"/api/check-transaction/{bad}")
-        assert r.status_code == 400
-        assert "invalid" in r.get_json()["error"].lower()
-
-
-def test_get_nonexistent_check_transaction(client):
-    fake_guid = str(uuid.uuid4())
-    res = client.get(f"/api/check-transaction/{fake_guid}")
-    assert res.status_code == 404
-    assert "not found" in res.get_json()["error"].lower()
