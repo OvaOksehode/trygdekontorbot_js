@@ -1,6 +1,6 @@
 from pydantic import ValidationError
 from routes.api import api
-from models.Exceptions import ClaimCooldownActiveError, CompanyAlreadyExistsError, CompanyNotFoundError, ErrorResponse, InvalidQueryError, OwnerAlreadyHasCompanyError
+from domain.models.Exceptions import ClaimCooldownActiveError, CompanyAlreadyExistsError, CompanyNotFoundError, ErrorResponse, InvalidQueryError, OwnerAlreadyHasCompanyError
 
 @api.errorhandler(ValidationError)
 def handle_validation_error(e):

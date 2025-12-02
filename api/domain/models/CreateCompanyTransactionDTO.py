@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 
-from models.Exceptions import InvalidTransactionAmountError
+from domain.models.Exceptions import InvalidTransactionAmountError
 
 class CreateCompanyTransactionDTO(BaseModel):
     amount: int = Field(..., alias="amount")

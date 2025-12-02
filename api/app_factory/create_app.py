@@ -19,8 +19,9 @@ def create_app():
     init_db(app)
 
     # 2️⃣ Import all models here (critical!)
-    import models  # Alembic sees them
-
+    import domain.models  # Alembic sees them
+    from domain.creators import checkTransactionCreator, companyTransactionCreator # import factory creators for ledgerEntries
+    
     # 3️⃣ Register blueprints
     app.register_blueprint(api, url_prefix="/api")
 

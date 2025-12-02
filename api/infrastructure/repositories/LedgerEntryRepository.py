@@ -1,10 +1,13 @@
 # repositories/LedgerEntryRepository.py
 from typing import Optional, Tuple
-from models.Exceptions import LedgerEntryNotFoundError
+from domain.models.Company import Company
+from domain.models.Exceptions import InvalidQueryError, LedgerEntryNotFoundError
 from infrastructure.db.db import db
-from models.CheckTransactionDetails import CheckTransactionDetails
-from models.LedgerEntry import LedgerEntry
-from models.CompanyTransactionDetails import CompanyTransactionDetails
+from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased
+from domain.models.CheckTransactionDetails import CheckTransactionDetails
+from domain.models.LedgerEntry import LedgerEntry
+from domain.models.CompanyTransactionDetails import CompanyTransactionDetails
 
 class LedgerEntryRepository:
 
@@ -13,22 +16,17 @@ class LedgerEntryRepository:
         return db.session.get(LedgerEntry, entry_id)
 
     @staticmethod
-    def get_company_transaction_by_external_id(external_id: str) -> Optional[Tuple[LedgerEntry, CompanyTransactionDetails]]:
-        """
-        Fetch a LedgerEntry with its CompanyTransactionDetails by external_id.
-        Returns None if not found or if no company transaction details exist.
-        """
-        result = (
-            db.session.query(LedgerEntry, CompanyTransactionDetails)
-            .join(CompanyTransactionDetails, CompanyTransactionDetails.ledger_entry_id == LedgerEntry.ledger_entry_id)
+    def get_by_external_id(external_id: str):
+        return (
+            db.session.query(LedgerEntry)
             .filter(LedgerEntry.external_id == external_id)
+            .options(
+                # only needed if there's a chance the entry is CompanyTransactionDetails
+                selectinload(CompanyTransactionDetails.sender_company)
+            )
             .first()
         )
 
-        if result is None:
-            raise LedgerEntryNotFoundError(f"Company transaction with external_id {external_id} not found")
-
-        return result  # will be (LedgerEntry, CompanyTransactionDetails) or None
 
     @staticmethod
     def get_check_transaction_by_external_id(external_id: str) -> Optional[Tuple[LedgerEntry, CompanyTransactionDetails]]:
@@ -58,44 +56,28 @@ class LedgerEntryRepository:
         return db.session.query(LedgerEntry).all()
 
     @staticmethod
-    def createCompanyTransaction(ledger_entry: LedgerEntry, tx_details: CompanyTransactionDetails) -> Tuple[LedgerEntry, CompanyTransactionDetails]:
+    def createCompanyTransaction(tx_details: CompanyTransactionDetails) -> CompanyTransactionDetails:
         """
-        Persists a LedgerEntry and its corresponding CompanyTransactionDetails
-        in a single atomic transaction, setting up the 1:1 relationship.
+        Creates a CompanyTransactionDetails, which is a subclass of LedgerEntry.
         """
-
-        # Link 1:1 relationship
-        tx_details.ledger_entry = ledger_entry
-
-        # Persist both objects
-        db.session.add(ledger_entry)
+        
         db.session.add(tx_details)
-
-        # Commit atomically
         db.session.commit()
+        db.session.refresh(tx_details)
 
-        # Now tx_details.id == ledger_entry.id because of FK
-        return ledger_entry, tx_details
+        return tx_details
 
     @staticmethod
-    def createCheckTransaction(ledger_entry: LedgerEntry, tx_details: CheckTransactionDetails) -> Tuple[LedgerEntry, CheckTransactionDetails]:
+    def createCheckTransaction(tx_details: CheckTransactionDetails) -> CheckTransactionDetails:
         """
-        Persists a LedgerEntry and its corresponding CompanyTransactionDetails
-        in a single atomic transaction, setting up the 1:1 relationship.
+        Creates a CheckTransactionDetails, which is a subclass of LedgerEntry.
         """
-
-        # Link 1:1 relationship
-        tx_details.ledger_entry = ledger_entry
-
-        # Persist both objects
-        db.session.add(ledger_entry)
+        # Persist the subclass only — SQLAlchemy handles the base table insert
         db.session.add(tx_details)
-
-        # Commit atomically
         db.session.commit()
+        db.session.refresh(tx_details)
 
-        # Now tx_details.id == ledger_entry.id because of FK
-        return ledger_entry, tx_details
+        return tx_details
 
     @staticmethod
     def update(entry: LedgerEntry) -> LedgerEntry:
@@ -111,6 +93,95 @@ class LedgerEntryRepository:
         db.session.delete(entry)
         db.session.commit()
         return True
+
+    @staticmethod
+    def add(entry: LedgerEntry) -> LedgerEntry:
+        db.session.add(entry)
+        db.session.commit()
+        return entry
+    
+    @staticmethod
+    def query_ledger_entries(filters: dict) -> list[LedgerEntry]:
+        """
+        filters: keys are normalized DB-ish names, e.g.
+        - "type" -> LedgerEntry.type
+        - "sender_company.name" -> Company.name via CompanyTransactionDetails
+        - "receiver_company.name" -> Company.name via LedgerEntry.receiver (if applicable)
+        """
+
+        query = db.session.query(LedgerEntry)
+
+        # Track whether we've already joined the subclass/company, so we don't join twice
+        joined_company_sender = False
+        joined_company_receiver = False
+
+        for key, value in filters.items():
+
+            # relational: sender_company.name -> join subclass then Company
+            if key.startswith("sender_company."):
+                field = key.split(".", 1)[1]
+
+                # join the subclass table (CompanyTransactionDetails) to expose its FKs
+                # join condition is on the PK/FK inheritance column
+                if not joined_company_sender:
+                    query = query.join(
+                        CompanyTransactionDetails,
+                        CompanyTransactionDetails.ledger_entry_id == LedgerEntry.ledger_entry_id
+                    )
+                    # now join the company table using relationship attribute on subclass
+                    query = query.join(Company, Company.company_id == CompanyTransactionDetails.sender_company_id)
+                    joined_company_sender = True
+
+                query = query.filter(getattr(Company, field) == value)
+                continue
+
+            # (optional) receiver_company.name if you modeled receiver relationship directly on LedgerEntry
+            if key.startswith("receiver_company."):
+                field = key.split(".", 1)[1]
+
+                if not joined_company_receiver:
+                    # if LedgerEntry.receiver is a relationship to Company, do:
+                    query = query.join(Company, Company.company_id == LedgerEntry.receiver_company_id)
+                    joined_company_receiver = True
+
+                query = query.filter(getattr(Company, field) == value)
+                continue
+
+            # simple ledger field filters, exact matches
+            if hasattr(LedgerEntry, key):
+                query = query.filter(getattr(LedgerEntry, key) == value)
+            else:
+                # unknown key -> raise or ignore depending on your policy
+                raise InvalidQueryError(f"Invalid filter: {key}")
+
+        return query.all()
+
+    @staticmethod
+    def get_for_company(company_external_id: str, limit: int, offset: int):
+        CTD = aliased(CompanyTransactionDetails)
+
+        # Step 1: fetch the company by external_id
+        company = db.session.query(Company).filter_by(external_id=company_external_id).first()
+        if not company:
+            return []  # or raise 404
+
+        company_id = company.company_id  # internal PK
+
+        # Step 2: query inbound/outbound transactions
+        query = (
+            db.session.query(LedgerEntry)
+            .outerjoin(CTD, CTD.ledger_entry_id == LedgerEntry.ledger_entry_id)
+            .filter(
+                (LedgerEntry.receiver_company_id == company_id) |
+                (CTD.sender_company_id == company_id)
+            )
+            .order_by(LedgerEntry.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+
+        return query.all()
+
 
     # Extra helpers (if you want type-specific queries)
 

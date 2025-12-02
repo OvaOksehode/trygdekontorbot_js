@@ -1,11 +1,12 @@
-from models.LedgerEntry import LedgerEntry
+from domain.models.LedgerEntry import LedgerEntry
 from infrastructure.db.db import db
 from datetime import UTC, datetime
 
-class CompanyTransactionDetails(db.Model):
-    __tablename__ = "CompanyTransactionDetails"  # singular, PascalCase
 
-    # PK is also FK to LedgerEntry
+class CompanyTransactionDetails(LedgerEntry):
+    __tablename__ = "CompanyTransactionDetails"
+
+    # Use the same PK as LedgerEntry (inheritance FK)
     ledger_entry_id = db.Column(
         "LedgerEntryID",
         db.Integer,
@@ -25,20 +26,14 @@ class CompanyTransactionDetails(db.Model):
         ),
         nullable=False
     )
-    # Add other fields specific to CompanyTransactionDetails here
 
-    # Relationship back to LedgerEntry (1:1)
-    ledger_entry = db.relationship(
-        "LedgerEntry",
-        back_populates="company_transaction_details",
-        uselist=False
-    )
-
+    # 🔹 Relationship to Company
     sender_company = db.relationship(
         "Company",
         foreign_keys=[sender_company_id],
-        back_populates="outgoing_company_transactions"  # all outgoing transactions initiated by this company
+        back_populates="outgoing_company_transactions"
     )
-    
-    class Config:
-      validate_by_name = True
+
+    __mapper_args__ = {
+        "polymorphic_identity": "companyTransaction"
+    }

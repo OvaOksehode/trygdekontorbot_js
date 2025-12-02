@@ -1,76 +1,83 @@
 from datetime import UTC, datetime, timedelta, timezone
 from typing import Tuple
-from models.CheckTransactionDetails import CheckTransactionDetails
-from models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
-from models.Exceptions import ClaimCooldownActiveError, CompanyNotEnoughFundsError, CompanyNotFoundError, LedgerEntryNotFoundError
+from domain.factories.LedgerEntryFactory import LedgerEntryFactory
+from domain.models.CheckTransactionDetails import CheckTransactionDetails
+from domain.models.CreateCheckTransactionDTO import CreateCheckTransactionDTO
+from domain.models.CreateLedgerEntryDTO import CreateLedgerEntryDTO
+from domain.models.Exceptions import ClaimCooldownActiveError, CompanyNotEnoughFundsError, CompanyNotFoundError, InvalidQueryError, LedgerEntryNotFoundError
 from infrastructure.repositories.CompanyRepository import CompanyRepository
 from infrastructure.repositories.LedgerEntryRepository import LedgerEntryRepository
-from models.CreateCompanyTransactionDTO import CreateCompanyTransactionDTO
-from models.CompanyTransactionDetails import CompanyTransactionDetails
-from models.LedgerEntry import LedgerEntry
+from domain.models.CreateCompanyTransactionDTO import CreateCompanyTransactionDTO
+from domain.models.CompanyTransactionDetails import CompanyTransactionDetails
+from domain.models.LedgerEntry import LedgerEntry
 from config import settings
 
-def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> Tuple[LedgerEntry, CompanyTransactionDetails]:
-    # Check that sender and receiver exists
+
+ALLOWED_QUERY_FILTERS = {
+    "receiverCompanyId": "receiver.extenal_id",
+    "senderCompanyId": "sender.external_id",
+    "receiverCompanyName": "receiver_company.name",
+    "senderCompanyName": "sender_company.name",
+    "type": "type",
+    "date_from": "created_at__gte",
+    "date_to": "created_at__lte",
+}
+
+
+def create_company_transaction(dto_data: CreateCompanyTransactionDTO) -> CompanyTransactionDetails:
+    # Check sender and receiver exist
     sender = CompanyRepository.get_by_external_id(dto_data.sender_company_id)
     receiver = CompanyRepository.get_by_external_id(dto_data.receiver_company_id)
 
     if sender is None or receiver is None:
-        raise CompanyNotFoundError(f"Company with external_guid {dto_data.sender_company_id} not found")
-    
+        raise CompanyNotFoundError("Sender or receiver not found")
+
     if dto_data.amount > sender.balance:
-        raise CompanyNotEnoughFundsError(f"Sender {sender.name} does not have enough funds to complete the requested transaction")
+        raise CompanyNotEnoughFundsError(
+            f"Sender {sender.name} does not have enough funds"
+        )
 
-    # Check that sender has enough balance
-    newLedgerEntry = LedgerEntry(
-        amount = dto_data.amount,
-        receiver_company_id = dto_data.receiver_company_id
-    )
-    newCompanyTransactionDetails = CompanyTransactionDetails(
-        sender_company_id = dto_data.sender_company_id
-    )
-    # Persist ledger + transaction details via repository
-    persisted_ledger, persisted_tx = LedgerEntryRepository.createCompanyTransaction(
-        newLedgerEntry,
-        newCompanyTransactionDetails
+    # Create a single polymorphic object (NO separate LedgerEntry)
+    tx = CompanyTransactionDetails(
+        amount=dto_data.amount,
+        receiver_company_id=receiver.company_id,
+        sender_company_id=sender.company_id
     )
 
-    # Update balances after persistence
+    # Persist via repo
+    persisted_tx = LedgerEntryRepository.createCompanyTransaction(tx)
+
+    # Update balances
     sender.balance -= dto_data.amount
     receiver.balance += dto_data.amount
 
     CompanyRepository.update(sender)
     CompanyRepository.update(receiver)
 
-    return persisted_ledger, persisted_tx
+    return persisted_tx
 
-def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> Tuple[LedgerEntry, CheckTransactionDetails]:
-    # Check that sender and receiver exists
+def create_check_transaction(dto_data: CreateCheckTransactionDTO) -> CheckTransactionDetails:
+    # 1️⃣ Ensure receiver exists
     receiver = CompanyRepository.get_by_external_id(dto_data.receiver_company_id)
-
     if receiver is None:
-        raise CompanyNotFoundError(f"Company with external_guid {dto_data.receiver_company_id} not found")
+        raise CompanyNotFoundError(
+            f"Company with external_guid {dto_data.receiver_company_id} not found"
+        )
 
-    # Check that sender has enough balance
-    newLedgerEntry = LedgerEntry(
-        amount = dto_data.amount,
-        receiver_company_id = receiver.company_id
-    )
-    newCheckTransactionDetails = CheckTransactionDetails(
-        sender_authority = dto_data.sender_authority
-    )
-    # Persist ledger + transaction details via repository
-    persisted_ledger, persisted_tx = LedgerEntryRepository.createCompanyTransaction(
-        newLedgerEntry,
-        newCheckTransactionDetails
+    # 2️⃣ Create the polymorphic subclass instance
+    check_tx = CheckTransactionDetails(
+        amount=dto_data.amount,                       # base LedgerEntry field
+        receiver_company_id=receiver.company_id,      # base LedgerEntry field
+        sender_authority=dto_data.sender_authority    # subclass-specific field
     )
 
-    # Update balances after persistence
+    LedgerEntryRepository.createCheckTransaction(check_tx)
+
+    # 4️⃣ Update receiver balance
     receiver.balance += dto_data.amount
-
     CompanyRepository.update(receiver)
 
-    return persisted_ledger, persisted_tx
+    return check_tx
 
 def get_company_transaction_by_external_guid(external_guid: str):
     transaction = LedgerEntryRepository.get_company_transaction_by_external_id(external_guid);
@@ -120,15 +127,49 @@ def company_claim_cash(external_guid: str):
             f"Claim is on cooldown for {company.name}. Please wait {minutes_until_next_claim(company)} minute(s) before trying again.",
             minutes_until_next_claim(company)
                                        )
-    persisted_ledger, persisted_tx = create_check_transaction(
-        CreateCheckTransactionDTO(
+    persisted_tx = create_ledger_entry(
+        CreateLedgerEntryDTO(
             amount = company.trygd_amount,
             receiver_company_id = company.external_id,
-            sender_authority = settings.default_trygd_authority
+            sender_authority = settings.default_trygd_authority,
+            type="checkTransaction"
         )
     )
     # company.balance += persisted_ledger.amount;
     company.last_trygd_claim = datetime.now(UTC)
     CompanyRepository.update(company);
 
-    return persisted_ledger, persisted_tx
+    return persisted_tx
+
+def query_ledger_entries(filters: dict) -> list[LedgerEntry]:
+    if not filters:
+        raise InvalidQueryError("At least one filter must be provided")
+
+    unknown_keys = [k for k in filters if k not in ALLOWED_QUERY_FILTERS]
+    if unknown_keys:
+        raise InvalidQueryError(f"Invalid filter(s): {', '.join(unknown_keys)}")
+
+    normalized_filters = {
+        ALLOWED_QUERY_FILTERS[k]: v for k, v in filters.items()
+    }
+
+    entries = LedgerEntryRepository.query_ledger_entries(normalized_filters)
+
+    if not entries:
+        raise LedgerEntryNotFoundError("No ledger entries found.")
+
+    return entries
+    
+def query_ledger_entry_by_guid(guid: str) -> LedgerEntry:
+    result = LedgerEntryRepository.get_by_external_id(guid)
+    return result
+
+def create_ledger_entry(dto: CreateLedgerEntryDTO) -> LedgerEntry:
+        return LedgerEntryFactory.create(dto)
+    
+def get_company_transactions(company_external_id: str, limit: int = 20, offset: int = 0):
+    return LedgerEntryRepository.get_for_company(
+            company_external_id,
+            limit=limit,
+            offset=offset
+        )

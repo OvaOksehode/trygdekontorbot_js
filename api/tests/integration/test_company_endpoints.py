@@ -232,8 +232,8 @@ def test_claim_cash_success(client, company_payload):
 
     claim_data = res_claim.get_json()
     assert "amount" in claim_data
-    assert "receiverCompanyId" in claim_data
-    assert claim_data["receiverCompanyId"] == external_guid
+    assert "receiverCompanyExternalId" in claim_data
+    assert claim_data["receiverCompanyExternalId"] == external_guid
 
     # Verify balance was updated
     after = client.get(f"/api/company/{external_guid}")
