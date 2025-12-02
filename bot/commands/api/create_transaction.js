@@ -30,52 +30,46 @@ module.exports = {
 
     try {
       // 1️⃣ Hent avsenderens selskap
-      const senderResponse = await axios.get(`${apiUrl}/company`, {
+      const senderRes = await axios.get(`${apiUrl}/company`, {
         params: { ownerId: owner_id },
       });
-
-      const senderCompanies = senderResponse.data;
+      const senderCompanies = senderRes.data;
       if (!senderCompanies || senderCompanies.length === 0) {
         await interaction.editReply(
           "⚠️ Du eier ikke noe selskap å sende penger fra."
         );
         return;
       }
-
-      const senderCompanyId = senderCompanies[0].companyId;
+      const senderExternalId = senderCompanies[0].externalId;
 
       // 2️⃣ Hent mottakerens selskap basert på navn
-      const receiverResponse = await axios.get(`${apiUrl}/company`, {
+      const receiverRes = await axios.get(`${apiUrl}/company`, {
         params: { name: receiverCompanyName },
       });
-
-      const receiverCompanies = receiverResponse.data;
+      const receiverCompanies = receiverRes.data;
       if (!receiverCompanies || receiverCompanies.length === 0) {
         await interaction.editReply(
           `⚠️ Fant ikke noe selskap med navnet **${receiverCompanyName}**.`
         );
         return;
       }
-
-      const receiverCompanyId = receiverCompanies[0].companyId;
+      const receiverExternalId = receiverCompanies[0].externalId;
 
       // 3️⃣ Send POST til backend
       const payload = {
-        senderCompanyId,
-        receiverCompanyId,
+        senderCompanyId: senderExternalId,
+        receiverCompanyId: receiverExternalId,
         amount,
+        type: "companyTransaction",
       };
 
-      const response = await axios.post(
-        `${apiUrl}/company-transaction`,
-        payload
-      );
+      const response = await axios.post(`${apiUrl}/ledger-entry`, payload);
 
       if (response.status === 201) {
-        const data = response.data;
+        const tx = response.data;
         await interaction.editReply(
-          `✅ Transaksjonen på **${amount} JOC** ble sendt fra **${senderCompanyId}** til **${receiverCompanyName}**.\n` +
-            `Transaksjons-ID: \`${data.externalId}\``
+          `✅ Transaksjonen på **${amount} JOC** ble sendt fra **${senderCompanies[0].name}** til **${receiverCompanyName}**.\n` +
+            `Transaksjons-ID: \`${tx.externalId}\``
         );
       } else {
         await interaction.editReply(
@@ -89,9 +83,7 @@ module.exports = {
       );
 
       const errMsg = error.response?.data?.error || "En ukjent feil oppstod.";
-      await interaction.editReply(
-        `⚠️ Kunne ikke sende transaksjonen. ${errMsg}`
-      );
+      await interaction.editReply(`⚠️ Kunne ikke sende transaksjonen. ${errMsg}`);
     }
   },
 };
