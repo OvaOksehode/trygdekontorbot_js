@@ -1,15 +1,27 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 const apiUrl = process.env.FLASK_API_URL;
 
+function toOsloTime(utcString) {
+    const date = new Date(utcString);
+    
+    return new Intl.DateTimeFormat('nb-NO', {
+        dateStyle: 'short',
+        timeStyle : 'medium',
+        timeZone: 'Europe/Oslo'
+    }).format(date);
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('transactions')
-        .setDescription('Henter de nyeste transaksjonene for selskapet ditt!')
+        .setName('transaksjoner')
+        .setDescription('Henter de nyligste transaksjonene for selskapet ditt.')
         .addIntegerOption(option =>
-            option.setName('limit')
-                .setDescription('Hvor mange transaksjoner som skal hentes (max 50)')
+            option.setName('antall')
+                .setDescription('Antallet transaksjoner som skal hentes.')
                 .setRequired(false)
+                .setMaxValue(10)
+                .setMinValue(1)
         ),
 
     async execute(interaction) {
@@ -44,16 +56,33 @@ module.exports = {
             }
 
             // 3️⃣ Format melding
-            const formatted = transactions.map(tx => {
-                const direction = tx.senderCompanyExternalId === companyExternalId ? 'Utgående' : 'Innkommende';
-                return `• [${direction}] ${tx.amount} 💰 - ID: ${tx.externalId} - ${tx.createdAt}`;
-            }).join('\n');
+            const embeds = transactions.map(tx => {
+                const isOutgoing = tx.senderCompanyExternalId === companyExternalId
+                const direction = isOutgoing ? 'Utgående' : 'Innkommende';
 
-            await interaction.editReply(`📜 De nyeste transaksjonene for selskapet ditt:\n${formatted}`);
+                const counterpartName = isOutgoing
+                        ? tx.receiverCompanyName || tx.receiverCompanyExternalId
+                        : tx.senderCompanyName || tx.senderCompanyExternalId;
+                
+                return new EmbedBuilder()
+                .setTitle(`${direction} transaksjon`)
+                .setColor(isOutgoing ? 0xff4cd2 : 0x35ed7e)
+                .addFields(
+                    {name: "Beløp", value: `${tx.amount} JOC`, inline: true},
+                    {name: "Transaksjons-ID", value: `${tx.externalId}`, inline: true},
+                    {name: isOutgoing ? "Sendt til" : "Mottatt fra", value: `${counterpartName}`, inline: true},
+                    {name: "Tidspunkt", value: toOsloTime(tx.createdAt), inline: true}
+                )
+            })
+
+            await interaction.editReply({
+                content : `📜 De nyligste transaksjonene for selskapet ditt`,
+                embeds
+            });
 
         } catch (error) {
             console.error('Error fetching transactions:', error.response?.data || error.message);
-            await interaction.editReply('⚠️ Kunne ikke hente transaksjonene. Prøv igjen senere.');
+            await interaction.editReply('Kunne ikke hente transaksjonene. Prøv igjen senere.');
         }
     },
 };
